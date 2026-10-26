@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 /* Layout: operations console — live floor plan across the top, the two room touch panels side by side, the two LED walls, then test tools and the event log. Single dark theme by design. */
 :root {
@@ -223,7 +224,61 @@ svg.vr { width: 100%; min-width: 760px; display: block; }
 .log .pl { display: block; color: #7f91a3; padding-left: 9.4em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log .ent.open .pl { white-space: pre-wrap; overflow: visible; color: #b9c8d6; }
 .tag.IO { color: var(--accent); }
-.tag.CAM { color: #ffb3c7; } .tag.PROBE { color: #c4f07a; }
+.tag.CAM { color: #ffb3c7; } .tag.PROBE { color: #c4f07a; } .tag.CFG { color: #ffd479; } .tag.GUEST { color: #9fe8ff; }
+/* config editor */
+.row6 { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1050px) { .row6 { grid-template-columns: minmax(0, 1fr); } }
+.cfg-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.cfg-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 760px) { .cfg-grid { grid-template-columns: minmax(0, 1fr); } }
+textarea.cfg { width: 100%; min-height: 420px; resize: vertical; background: #070a0d; color: #cfe0ee; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.5; tab-size: 2; }
+textarea.cfg:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cfg-side { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.cfg-msg { border: 1px solid var(--line); border-radius: 6px; padding: 10px; font-size: 13px; background: var(--surface-2); min-height: 60px; }
+.cfg-msg.err { border-color: var(--bad); }
+.cfg-msg.ok { border-color: var(--ok); }
+.cfg-msg ul { margin: 6px 0 0; padding-left: 18px; }
+.cfg-msg table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+.cfg-msg td:first-child { word-break: normal; overflow-wrap: anywhere; }
+.cfg-msg td { padding: 3px 4px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); word-break: break-all; }
+.cfg-msg td.o { color: var(--bad); text-decoration: line-through; } .cfg-msg td.n { color: var(--ok); }
+.ver { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
+.ver div { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12.5px; border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; background: var(--surface-2); }
+.ver div.cur { border-color: var(--accent); }
+.ver small { color: var(--muted); }
+.btn.sm { padding: 3px 8px; font-size: 12px; }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.who { font-size: 12px; color: var(--muted); }
+/* guest QR + phone */
+.guest { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 560px) { .guest { grid-template-columns: minmax(0, 1fr); } }
+.qrbox { display: grid; gap: 6px; justify-items: center; }
+.qrbox img, .qrbox canvas { width: 168px; height: 168px; background: #fff; padding: 8px; border-radius: 6px; image-rendering: pixelated; max-width: 100%; }
+.qrbox code { font-size: 11px; color: var(--muted); word-break: break-all; text-align: center; max-width: 190px; }
+.phone { width: 230px; max-width: 100%; border: 8px solid #050607; border-radius: 26px; background: #f3f6f9; color: #17202a; padding: 14px 12px; display: grid; gap: 10px; justify-self: center; }
+.phone h4 { margin: 0; font-size: 16px; } .phone p { margin: 0; font-size: 12px; color: #586574; }
+.phone .pr { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
+.phone button { border: 0; border-radius: 10px; background: #dde5ee; padding: 8px 10px; font-weight: 700; font-size: 13px; color: #17202a; }
+.phone button.mut[aria-pressed="true"] { background: #d1342f; color: #fff; }
+.phone button.help { background: #17202a; color: #fff; width: 100%; }
+.phone .vol { font-family: var(--font-mono); font-size: 13px; }
+.phone .done { font-size: 12px; color: #1d7a45; font-weight: 600; }
+.scr .qr { position: absolute; right: 1.2em; bottom: 1.2em; width: 7em; display: grid; gap: .3em; justify-items: center; font-size: .8em; color: #9fb3c6; text-align: center; }
+.scr .qr img { width: 100%; background: #fff; padding: .35em; border-radius: .3em; image-rendering: pixelated; }
+/* bookings */
+.tl { position: relative; display: grid; gap: 10px; }
+.tl-row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; align-items: center; }
+.tl-row b { font-family: var(--font-display); letter-spacing: .06em; font-size: 14px; }
+.tl-track { position: relative; height: 40px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+.tl-blk { position: absolute; top: 4px; bottom: 4px; border-radius: 4px; padding: 2px 6px; font-size: 11.5px; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #06121a; font-weight: 600; }
+.tl-blk.past { opacity: .4; }
+.tl-blk.now { box-shadow: 0 0 0 2px #fff inset; }
+.tl-axis { position: relative; height: 18px; margin-left: 120px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.tl-axis span { position: absolute; transform: translateX(-50%); }
+.tl-now { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff6f6b; z-index: 2; }
+.tl-next { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 12px; }
+.tl-next div { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--surface-2); font-size: 13px; }
+.tl-next small { display: block; color: var(--muted); }
 /* cameras */
 .cams { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
 @media (max-width: 900px) { .cams { grid-template-columns: minmax(0, 1fr); } }
@@ -346,6 +401,36 @@ table.dev { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width
     </div>
   </section>
 
+  <section class="row6">
+    <div class="card">
+      <div class="card-h"><h2>Room configuration</h2><span class="who">Signed in as technician · changes are versioned</span></div>
+      <div class="card-b">
+        <div class="cfg-top"><span class="hint">Preset:</span><div class="segs" id="presets"></div></div>
+        <div class="cfg-grid">
+          <textarea class="cfg" id="cfgText" spellcheck="false" aria-label="Room configuration JSON"></textarea>
+          <div class="cfg-side">
+            <div class="row"><button class="btn" id="cfgCheck">Check</button><button class="btn pri" id="cfgReview">Review and apply</button><button class="btn" id="cfgReset">Discard edits</button></div>
+            <div class="cfg-msg" id="cfgMsg">Edit the JSON or pick a preset, then press <b>Review and apply</b>. Nothing changes on the processor until you confirm.</div>
+            <div><h3 class="hint" style="margin:0 0 6px;font-weight:600">Saved versions · \user\lakeview-config.json</h3><div class="ver" id="cfgVer"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Guest access</h2><div class="segs" id="qrRoom"><button data-r="A" aria-pressed="true">Room A</button><button data-r="B" aria-pressed="false">Room B</button></div></div>
+      <div class="card-b guest">
+        <div class="qrbox" id="qrBox"></div>
+        <div class="phone" id="phone"></div>
+      </div>
+      <p class="hint" style="margin:0 14px 14px">The QR code also shows on each LED wall's welcome screen. Its token changes after every meeting, so a code photographed today cannot control the room tomorrow.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Bookings · today</h2><span class="hint">From the room calendars. Combined bookings span both rooms.</span></div>
+    <div class="card-b"><div class="tl" id="tl"></div><div class="tl-next" id="tlNext"></div></div>
+  </section>
+
   <section class="row4">
     <div class="card">
       <div class="card-h"><h2>Test tools</h2><span class="hint">Stand in for people and hardware</span></div>
@@ -358,8 +443,8 @@ table.dev { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width
           <div class="row"><button class="btn" id="lapA" aria-pressed="true">Laptop plugged in, Room A</button><button class="btn" id="lapB" aria-pressed="false">Laptop plugged in, Room B</button></div></div>
         <div class="tool"><h3>Faults</h3>
           <div class="row"><button class="btn" id="fCamB" aria-pressed="false">Unplug camera B</button><button class="btn" id="fLedA" aria-pressed="false">LED wall A stops answering</button><button class="btn" id="fDecB" aria-pressed="false">NVX-DEC-B offline</button></div></div>
-        <div class="tool"><h3>Coming next</h3>
-          <p class="hint" style="margin:0">Step 4: config editor with presets and wall sensor override, QR code, bookings. Tip: add a fault, then run the room probe.</p></div>
+        <div class="tool"><h3>Try this</h3>
+          <p class="hint" style="margin:0">Pick the “Event hall” preset and apply it, then open the airwall: the rooms combine by themselves. Pick “Sensor bypass” when the sensor is broken but the wall is open. Add a fault, then run the room probe.</p></div>
       </div>
     </div>
     <div class="card">
@@ -394,6 +479,17 @@ const S = {
   prompted: false
 };
 const COLOR = { A: 'var(--room-a)', B: 'var(--room-b)' };
+/* ================= configuration (what lives in \user\lakeview-config.json) ================= */
+const PRESETS = {
+  'Standard': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'prompt', autoDivideOnClose: true }, audio: { defaultVolume: 55, maxVolume: 90 }, camera: { defaultMode: 'group', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 15 }, guest: { qrEnabled: true, rotateTokenEachMeeting: true } },
+  'Event hall': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview Hall' }, combine: { sensorMode: 'auto', autoDivideOnClose: true }, audio: { defaultVolume: 65, maxVolume: 100 }, camera: { defaultMode: 'speaker', voiceSwitchHoldSec: 4 }, room: { autoOffMinutesVacant: 60 }, guest: { qrEnabled: true, rotateTokenEachMeeting: true } },
+  'Sensor bypass': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'override-open', autoDivideOnClose: false }, audio: { defaultVolume: 55, maxVolume: 90 }, camera: { defaultMode: 'group', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 15 }, guest: { qrEnabled: true, rotateTokenEachMeeting: true } },
+  'Maintenance': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'override-closed', autoDivideOnClose: true }, audio: { defaultVolume: 40, maxVolume: 70 }, camera: { defaultMode: 'preset', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 5 }, guest: { qrEnabled: false, rotateTokenEachMeeting: true } }
+};
+let CFG = JSON.parse(JSON.stringify(PRESETS['Standard']));
+const sensorOverridden = () => CFG.combine.sensorMode.startsWith('override');
+const effSensor = () => CFG.combine.sensorMode === 'override-open' ? 'open' : CFG.combine.sensorMode === 'override-closed' ? 'closed' : S.sensor;
+const roomName = r => isCombined() ? CFG.names.combined : CFG.names[r];
 /* in combined mode Room A is the master: its UC engine, audio and controls drive both sides */
 const master = room => S.mode === 'combined' ? 'A' : room;
 const R = room => S.r[master(room)];
@@ -405,7 +501,7 @@ const hhmmss = t => { const d = new Date(t); return [d.getHours(), d.getMinutes(
 /* channel → label, direction from the processor's point of view */
 const CH = {
   'TP-A': ['Touch panels', 'in'], 'TP-B': ['Touch panels', 'in'], SENSOR: ['I/O + sensors', 'in'], IO: ['I/O + sensors', 'in'],
-  NVX: ['DM NVX', 'out'], QSYS: ['Q-SYS', 'out'], DISPLAY: ['Displays', 'out'], UC: ['UC engines', 'out'], CAM: ['Cameras', 'out'], PROBE: ['Program', ''], PROC: ['Program', ''], WARN: ['Program', '']
+  NVX: ['DM NVX', 'out'], QSYS: ['Q-SYS', 'out'], DISPLAY: ['Displays', 'out'], UC: ['UC engines', 'out'], CAM: ['Cameras', 'out'], PROBE: ['Program', ''], CFG: ['Program', ''], GUEST: ['Touch panels', 'in'], PROC: ['Program', ''], WARN: ['Program', '']
 };
 const GROUPS = ['Touch panels', 'I/O + sensors', 'DM NVX', 'Q-SYS', 'Displays', 'UC engines', 'Cameras', 'Program'];
 const INS = { list: [], on: Object.fromEntries(GROUPS.map(g => [g, true])), paused: false, count: Object.fromEntries(GROUPS.map(g => [g, 0])) };
@@ -491,6 +587,7 @@ function qsysMute(room) {
 function setPower(room, on) {
   const targets = isCombined() ? ROOMS : [room];
   const r = R(room);
+  if (on && !r.power) r.vol = CFG.audio.defaultVolume;
   r.power = on;
   if (!on) { if (r.call) endCall(room, true); r.src = 'idle'; }
   targets.forEach(t => displayPower(t, on));
@@ -507,6 +604,7 @@ function endCall(room, quiet) {
   const r = R(room); const m = master(room);
   r.call = false;
   log('UC', `UC engine ${m}: left the meeting${quiet ? ' (system off)' : ''}`);
+  if (CFG.guest.rotateTokenEachMeeting) { (isCombined() ? ROOMS : [m]).forEach(x => TOK[x] = newTok()); log('GUEST', `Guest QR token renewed for ${roomName(m)}`); }
   if (!quiet) (isCombined() ? ROOMS : [room]).forEach(routeDisplay);
 }
 function share(room) {
@@ -524,10 +622,12 @@ function share(room) {
 }
 const other = room => room === 'A' ? 'B' : 'A';
 
-function combine(byRoom) {
-  if (S.sensor !== 'open') {
-    S.ui[byRoom].dlg = { title: 'Airwall is closed', body: 'Open the airwall fully before combining the rooms. The wall sensor must report open.', acts: [['OK', null]] };
-    log('PROC', `Combine refused: wall sensor reports ${S.sensor}`); return;
+function combine(byRoom, how) {
+  if (effSensor() !== 'open') {
+    S.ui[byRoom].dlg = sensorOverridden()
+      ? { title: 'Combining is switched off', body: 'The room configuration keeps these rooms divided (maintenance override). A technician can change this in the configuration.', acts: [['OK', null]] }
+      : { title: 'Airwall is closed', body: 'Open the airwall fully before combining the rooms. The wall sensor must report open.', acts: [['OK', null]] };
+    log('PROC', `Combine refused: wall sensor reports ${effSensor()}${sensorOverridden() ? ' (override)' : ''}`); return;
   }
   const busy = ROOMS.filter(x => S.r[x].call);
   if (busy.length) {
@@ -537,7 +637,7 @@ function combine(byRoom) {
   S.mode = 'combined'; S.prompted = false;
   const A = S.r.A, B = S.r.B;
   A.power = true; A.src = 'idle'; A.vol = Math.round((A.vol + B.vol) / 2); A.mute = A.mute || B.mute;
-  log('PROC', `Rooms COMBINED from Room ${byRoom}'s panel. Room A is master.`);
+  log('PROC', `Rooms COMBINED ${how || `from Room ${byRoom}'s panel`}. Room A is master.`);
   log('UC', 'UC engine B to standby; UC engine A runs the combined room');
   qsysCombine(true); qsysVol('A');
   ROOMS.forEach(t => displayPower(t, true));
@@ -563,7 +663,7 @@ function moveWall() {
   if (S.wall === 'opening' || S.wall === 'closing') return;
   const opening = S.wall === 'closed';
   S.wall = opening ? 'opening' : 'closing';
-  if (!opening) { S.sensor = 'moving'; log('SENSOR', 'Wall sensor: panels moving (not open)'); if (isCombined()) divide('airwall closing'); }
+  if (!opening) { S.sensor = 'moving'; log('SENSOR', 'Wall sensor: panels moving (not open)'); if (isCombined() && CFG.combine.autoDivideOnClose && !sensorOverridden()) divide('airwall closing'); }
   else { S.sensor = 'moving'; log('SENSOR', 'Wall sensor: panels moving'); }
   renderAll();
   clearTimeout(wallTimer);
@@ -571,7 +671,12 @@ function moveWall() {
     S.wall = opening ? 'open' : 'closed';
     S.sensor = S.wall;
     log('SENSOR', `Wall sensor: ${S.sensor.toUpperCase()}`, `I/O 1 ${opening ? 'contact open' : 'contact closed'}`);
-    if (opening) {
+    if (opening && sensorOverridden()) {
+      log('PROC', `Airwall open, sensor ignored: configuration override "${CFG.combine.sensorMode}"`);
+    } else if (opening && CFG.combine.sensorMode === 'auto') {
+      if (ROOMS.some(x => S.r[x].call)) log('PROC', 'Airwall open: auto-combine waits, a meeting is running');
+      else combine('A', 'automatically (config: sensorMode auto)');
+    } else if (opening) {
       S.prompted = true;
       ROOMS.forEach(t => { if (S.r[t].power || S.r[t].occ) S.ui[t].dlg = { title: 'Airwall opened', body: 'Combine Room A and Room B into one room? Both LED walls, cameras, microphones and speakers will work together.', acts: [['Not now', null], ['Combine rooms', 'combine']] }; });
       log('PROC', 'Airwall open: asking the occupied rooms whether to combine');
@@ -684,9 +789,9 @@ function renderStatus() {
   const wc = $('wallChip');
   const wl = { closed: ['Closed', ''], opening: ['Opening…', 'warn'], open: ['Open', 'acc'], closing: ['Closing…', 'warn'] }[S.wall];
   wc.className = 'chip ' + wl[1]; wc.innerHTML = `<i></i>${wl[0]}`;
-  $('sensorTxt').textContent = { closed: 'Closed', open: 'Open', moving: 'Moving' }[S.sensor];
-  const allow = S.sensor === 'open' && !ROOMS.some(x => S.r[x].call);
-  $('allowTxt').textContent = comb ? 'Combined' : allow ? 'Yes' : S.sensor !== 'open' ? 'No, wall not open' : 'No, a meeting is running';
+  $('sensorTxt').textContent = { closed: 'Closed', open: 'Open', moving: 'Moving' }[S.sensor] + (sensorOverridden() ? ` (override: treat as ${effSensor()})` : '');
+  const allow = effSensor() === 'open' && !ROOMS.some(x => S.r[x].call);
+  $('allowTxt').textContent = comb ? 'Combined' : allow ? 'Yes' : effSensor() !== 'open' ? (sensorOverridden() ? 'No, kept divided by config' : 'No, wall not open') : 'No, a meeting is running';
   $('wallBtn').textContent = S.wall === 'closed' ? 'Open the airwall' : S.wall === 'open' ? 'Close the airwall' : S.wall === 'opening' ? 'Opening…' : 'Closing…';
   ROOMS.forEach(r => {
     const rr = R(r), src = !rr.power ? 'Off' : rr.call ? (rr.src === 'laptop' ? 'Meeting + laptop share' : 'Teams meeting') : rr.src === 'laptop' ? 'Laptop (HDMI)' : 'Welcome screen';
@@ -713,8 +818,8 @@ const ICON = {
 function renderTp(room) {
   const el = $('tp' + room), rr = R(room), comb = isCombined();
   const t = new Date(); const tm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
-  const name = comb ? 'Lakeview <span>A + B</span>' : `Lakeview <span>${room}</span>`;
-  const combOk = S.sensor === 'open';
+  const name = `<span>${esc(roomName(room))}</span>`;
+  const combOk = effSensor() === 'open';
   let h = `<div class="tp-head"><div class="nm">${name}</div><div class="rt">${comb ? '<span class="tchip comb">Combined</span>' : ''}${rr.call ? '<span class="tchip call">In meeting</span>' : ''}<span>${tm}</span></div></div>`;
   h += `<div class="tp-body">
     <button class="tile call${rr.call ? ' on' : ''}" data-a="meet"><span class="ic">${ICON.meet}</span><span><span class="tt">${rr.call ? 'Leave meeting' : 'Start Teams meeting'}</span><span class="st">${rr.call ? 'Running ' + mmss(Date.now() - rr.callStart) : 'Uses camera, mics and LED wall'}</span></span></button>
@@ -749,10 +854,10 @@ function tpClick(room, e) {
     case 'power': setPower(room, !rr.power); break;
     case 'comb':
       if (isCombined()) S.ui[room].dlg = { title: 'Divide the rooms?', body: rr.call ? 'The meeting stays in Room A. Room B leaves it and goes back to its own controls.' : 'Room A and Room B will go back to working on their own.', acts: [['Cancel', null], ['Divide rooms', 'divide']] };
-      else if (S.sensor !== 'open') { combine(room); }
+      else if (effSensor() !== 'open') { combine(room); }
       else S.ui[room].dlg = { title: 'Combine the rooms?', body: 'Both LED walls, cameras, microphones and speakers will work as one room, controlled from either panel.', acts: [['Cancel', null], ['Combine rooms', 'combine']] };
       break;
-    case 'vup': rr.vol = Math.min(100, rr.vol + 5); qsysVol(room); break;
+    case 'vup': rr.vol = Math.min(CFG.audio.maxVolume, rr.vol + 5); qsysVol(room); break;
     case 'vdn': rr.vol = Math.max(0, rr.vol - 5); qsysVol(room); break;
     case 'mute': rr.mute = !rr.mute; qsysMute(room); break;
   }
@@ -780,7 +885,8 @@ function renderScreen(room) {
     label = 'Laptop'; cls = 'acc';
   } else {
     const t = new Date();
-    html = `<div class="scr idle"><div class="big">LAKEVIEW ${comb ? 'A + B' : room}</div><div class="tm">${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}</div><div class="sub">Tap Start Teams meeting on the touch panel, or plug in the HDMI cable to share.</div></div>`;
+    const nx = nextMeeting(master(room));
+    html = `<div class="scr idle"><div class="big">${esc(roomName(room).toUpperCase())}</div><div class="tm">${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}</div><div class="sub">${nx ? `Next: ${esc(nx.t)} at ${hm(nx.s)}` : 'No more meetings today'}</div><div class="sub">Tap Start Teams meeting on the touch panel, or plug in the HDMI cable to share.</div>${CFG.guest.qrEnabled && qrData(master(room)) ? `<div class="qr"><img alt="QR code for phone control" src="${qrData(master(room))}"><span>Scan for phone control</span></div>` : ''}</div>`;
     label = 'Welcome screen'; cls = 'acc';
   }
   el.innerHTML = html;
@@ -948,9 +1054,9 @@ function tickCams() {
     const la = Math.max(...AU.lvl.A), lb = S.fault.camB ? -99 : Math.max(...AU.lvl.B);
     const want = lb > la + 3 && lb > -40 ? 'B' : la > lb + 3 && la > -40 ? 'A' : CAM.active;
     if (want !== CAM.cand) { CAM.cand = want; CAM.since = Date.now(); }
-    if (CAM.cand !== CAM.active && Date.now() - CAM.since > 2500) {
+    if (CAM.cand !== CAM.active && Date.now() - CAM.since > CFG.camera.voiceSwitchHoldSec * 1000) {
       CAM.active = CAM.cand;
-      log('CAM', `Voice switching: talker in Room ${CAM.active}, camera ${CAM.active} → UC engine A`, `Q-SYS mic levels A ${la.toFixed(0)} / B ${lb.toFixed(0)} dBFS, 2.5 s hold`, '');
+      log('CAM', `Voice switching: talker in Room ${CAM.active}, camera ${CAM.active} → UC engine A`, `Q-SYS mic levels A ${la.toFixed(0)} / B ${lb.toFixed(0)} dBFS, ${CFG.camera.voiceSwitchHoldSec} s hold`, '');
     }
   } else CAM.active = 'A';
   renderCams();
@@ -1011,7 +1117,7 @@ const PROBE = [
   ['Microphones', 'Read back pink noise on every mic lobe', () => ['pass', 'All 8 lobes −38 to −34 dBFS (expected −40 or higher)']],
   ['Echo canceller', 'AEC reference present during noise', () => ['pass', 'ERLE 27 dB room A, 29 dB room B']],
   ['Cameras', 'Recall preset 1 on each camera', () => S.fault.camB ? ['fail', 'Camera B did not respond'] : ['pass', 'Both cameras moved to preset 1']],
-  ['Airwall sensor', 'Sensor agrees with room mode', () => (isCombined() && S.sensor !== 'open') ? ['fail', 'Combined but sensor not open'] : ['pass', `Sensor ${S.sensor}, mode ${S.mode}`]]
+  ['Airwall sensor', 'Sensor agrees with room mode', () => sensorOverridden() ? ['warn', `Sensor reads ${S.sensor} but config override "${CFG.combine.sensorMode}" is active`] : (isCombined() && S.sensor !== 'open') ? ['fail', 'Combined but sensor not open'] : ['pass', `Sensor ${S.sensor}, mode ${S.mode}`]]
 ];
 let probing = false;
 function runProbe() {
@@ -1050,6 +1156,158 @@ function runProbe() {
 }
 $('probeBtn').addEventListener('click', runProbe);
 
+/* ================= config editor ================= */
+const SCHEMA = {
+  'names.A': v => typeof v === 'string' && v.length > 0 && v.length <= 24 || 'text, 1–24 characters',
+  'names.B': v => typeof v === 'string' && v.length > 0 && v.length <= 24 || 'text, 1–24 characters',
+  'names.combined': v => typeof v === 'string' && v.length > 0 && v.length <= 24 || 'text, 1–24 characters',
+  'combine.sensorMode': v => ['prompt', 'auto', 'override-open', 'override-closed'].includes(v) || 'one of "prompt", "auto", "override-open", "override-closed"',
+  'combine.autoDivideOnClose': v => typeof v === 'boolean' || 'true or false',
+  'audio.defaultVolume': v => Number.isInteger(v) && v >= 0 && v <= 100 || 'whole number 0–100',
+  'audio.maxVolume': v => Number.isInteger(v) && v >= 50 && v <= 100 || 'whole number 50–100',
+  'camera.defaultMode': v => ['group', 'speaker', 'preset'].includes(v) || 'one of "group", "speaker", "preset"',
+  'camera.voiceSwitchHoldSec': v => typeof v === 'number' && v >= 1 && v <= 10 || 'number 1–10',
+  'room.autoOffMinutesVacant': v => Number.isInteger(v) && v >= 5 && v <= 120 || 'whole number 5–120',
+  'guest.qrEnabled': v => typeof v === 'boolean' || 'true or false',
+  'guest.rotateTokenEachMeeting': v => typeof v === 'boolean' || 'true or false'
+};
+const flat = (o, p = '') => Object.entries(o).reduce((a, [k, v]) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.assign(a, flat(v, p + k + '.')) : (a[p + k] = v, a)), {});
+const VERS = [];
+let pending = null, presetName = 'Standard';
+function validate(text) {
+  let obj;
+  try { obj = JSON.parse(text); }
+  catch (e) {
+    const m = /position (\d+)/.exec(e.message);
+    const line = m ? text.slice(0, +m[1]).split('\n').length : null;
+    return { errors: [`Not valid JSON${line ? ' near line ' + line : ''}: ${e.message.replace(/^JSON\.parse: |^Unexpected/, 'unexpected')}`] };
+  }
+  const f = flat(obj), errors = [];
+  Object.keys(SCHEMA).forEach(k => { if (!(k in f)) errors.push(`Missing "${k}"`); else { const r = SCHEMA[k](f[k]); if (r !== true) errors.push(`"${k}" must be ${r} (got ${JSON.stringify(f[k])})`); } });
+  Object.keys(f).forEach(k => { if (!(k in SCHEMA)) errors.push(`Unknown setting "${k}"`); });
+  if (!errors.length && f['audio.defaultVolume'] > f['audio.maxVolume']) errors.push('"audio.defaultVolume" cannot be above "audio.maxVolume"');
+  return { obj, errors };
+}
+function showMsg(html, cls) { const m = $('cfgMsg'); m.className = 'cfg-msg' + (cls ? ' ' + cls : ''); m.innerHTML = html; }
+function renderPresets() {
+  $('presets').innerHTML = Object.keys(PRESETS).map(n => `<button data-p="${n}" aria-pressed="${n === presetName}">${n}</button>`).join('');
+}
+function renderVersions() {
+  $('cfgVer').innerHTML = VERS.slice().reverse().map(v => `<div class="${v.n === VERS.length ? 'cur' : ''}"><span>v${v.n} · ${esc(v.note)}<br><small>${hhmmss(v.t)} · ${v.changes} change${v.changes === 1 ? '' : 's'}</small></span>${v.n === VERS.length ? '<small>current</small>' : `<button class="btn sm" data-rb="${v.n}">Roll back</button>`}</div>`).join('');
+}
+function saveVersion(note, changes) { VERS.push({ n: VERS.length + 1, t: Date.now(), cfg: JSON.parse(JSON.stringify(CFG)), note, changes }); renderVersions(); }
+function applyCfg(newCfg, note) {
+  const before = flat(CFG), after = flat(newCfg);
+  const changed = Object.keys(after).filter(k => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+  CFG = newCfg;
+  saveVersion(note, changed.length);
+  log('CFG', `Configuration v${VERS.length} applied (${note}): ${changed.length ? changed.map(k => `${k} ${JSON.stringify(before[k])} → ${JSON.stringify(after[k])}`).join(', ') : 'no changes'}`,
+    `PUT /api/config → processor writes \\user\\lakeview-config.json ${JSON.stringify(newCfg)}`, 'out');
+  // settings take effect now
+  if (changed.includes('camera.defaultMode')) ROOMS.forEach(r => { CAM[r].mode = CFG.camera.defaultMode; });
+  ROOMS.forEach(r => { if (S.r[r].vol > CFG.audio.maxVolume) { S.r[r].vol = CFG.audio.maxVolume; qsysVol(r); } });
+  if (isCombined() && effSensor() !== 'open') divide('configuration keeps rooms divided');
+  else if (!isCombined() && CFG.combine.sensorMode === 'auto' && effSensor() === 'open' && !ROOMS.some(x => S.r[x].call)) combine('A', 'automatically (config: sensorMode auto)');
+  $('cfgText').value = JSON.stringify(CFG, null, 2);
+  renderAll();
+}
+$('presets').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; presetName = b.dataset.p; $('cfgText').value = JSON.stringify(PRESETS[presetName], null, 2); renderPresets();
+  showMsg(`Preset <b>${esc(presetName)}</b> loaded into the editor. Press <b>Review and apply</b> to see what changes.`); });
+$('cfgCheck').addEventListener('click', () => { const v = validate($('cfgText').value);
+  if (v.errors.length) showMsg(`<b>${v.errors.length} problem${v.errors.length > 1 ? 's' : ''} found</b><ul>${v.errors.map(e => `<li>${esc(e)}</li>`).join('')}</ul>`, 'err');
+  else showMsg('<b>Looks good.</b> All settings are valid.', 'ok'); });
+$('cfgReview').addEventListener('click', () => {
+  const v = validate($('cfgText').value);
+  if (v.errors.length) { showMsg(`<b>Cannot apply: ${v.errors.length} problem${v.errors.length > 1 ? 's' : ''}</b><ul>${v.errors.map(e => `<li>${esc(e)}</li>`).join('')}</ul>`, 'err'); return; }
+  const before = flat(CFG), after = flat(v.obj);
+  const ch = Object.keys(after).filter(k => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+  if (!ch.length) { showMsg('No changes compared with the running configuration.'); return; }
+  pending = v.obj;
+  const risky = ch.some(k => k.startsWith('combine.'));
+  showMsg(`<b>${ch.length} change${ch.length > 1 ? 's' : ''} to apply</b>${risky ? '<br><span style="color:var(--warn)">This changes how the airwall sensor is used. Check the wall position before confirming.</span>' : ''}
+    <table>${ch.map(k => `<tr><td>${k}</td><td class="o">${esc(JSON.stringify(before[k]))}</td><td class="n">${esc(JSON.stringify(after[k]))}</td></tr>`).join('')}</table>
+    <div class="row" style="margin-top:8px"><button class="btn pri" id="cfgConfirm">Confirm and apply</button><button class="btn" id="cfgCancel">Cancel</button></div>`);
+  $('cfgConfirm').addEventListener('click', () => { const note = JSON.stringify(flat(pending)) === JSON.stringify(flat(PRESETS[presetName])) ? `preset "${presetName}"` : 'manual edit'; applyCfg(pending, note); pending = null; showMsg('<b>Applied.</b> The processor saved the new configuration and the rooms follow it now.', 'ok'); });
+  $('cfgCancel').addEventListener('click', () => { pending = null; showMsg('Cancelled. Nothing was changed.'); });
+});
+$('cfgReset').addEventListener('click', () => { $('cfgText').value = JSON.stringify(CFG, null, 2); showMsg('Editor reset to the running configuration.'); });
+$('cfgVer').addEventListener('click', e => { const b = e.target.closest('[data-rb]'); if (!b) return; const v = VERS[+b.dataset.rb - 1];
+  applyCfg(JSON.parse(JSON.stringify(v.cfg)), `roll back to v${v.n}`); showMsg(`<b>Rolled back</b> to version ${v.n}.`, 'ok'); });
+
+/* ================= guest QR and phone ================= */
+const newTok = () => Math.random().toString(36).slice(2, 6).toUpperCase();
+const TOK = { A: newTok(), B: newTok() };
+const qrCache = {};
+const guestUrl = r => `https://moeslab.github.io/Crestron-QSC-Combined-Room/#guest-${r}-${TOK[r]}`;
+function qrData(r) {
+  const url = guestUrl(r);
+  if (qrCache[url]) return qrCache[url];
+  if (typeof QRCode === 'undefined') return '';
+  const d = document.createElement('div');
+  new QRCode(d, { text: url, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M });
+  const c = d.querySelector('canvas');
+  return (qrCache[url] = c ? c.toDataURL() : '');
+}
+let qrRoom = 'A', ticket = 1041, phoneMsg = '';
+function renderGuest() {
+  const r = qrRoom, rr = R(r);
+  const data = CFG.guest.qrEnabled ? qrData(master(r)) : '';
+  $('qrBox').innerHTML = CFG.guest.qrEnabled
+    ? `${data ? `<img alt="QR code for phone control of ${esc(roomName(r))}" src="${data}">` : '<div class="hint">QR library did not load</div>'}<code>${esc(guestUrl(master(r)))}</code><span class="hint">token ${TOK[master(r)]}</span>`
+    : '<div class="hint" style="max-width:180px">Guest QR access is turned off in the room configuration.</div>';
+  $('phone').innerHTML = CFG.guest.qrEnabled ? `<h4>${esc(roomName(r))}</h4><p>${rr.power ? (rr.call ? 'Meeting in progress' : 'Room is on') : 'Room is off'} · phone control</p>
+    <div class="pr"><button data-g="vdn" aria-label="Volume down">−</button><span class="vol">Volume ${rr.vol}%</span><button data-g="vup" aria-label="Volume up">+</button></div>
+    <div class="pr"><button class="mut" data-g="mute" aria-pressed="${rr.mute}">${rr.mute ? 'Mics muted' : 'Mute mics'}</button><button data-g="share">${rr.src === 'laptop' ? 'Stop share' : 'Share laptop'}</button></div>
+    <button class="help" data-g="help">Report a problem</button>${phoneMsg ? `<span class="done">${esc(phoneMsg)}</span>` : ''}` : '<h4>Scan disabled</h4><p>Ask the help desk for assistance.</p>';
+}
+$('qrRoom').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; qrRoom = b.dataset.r; phoneMsg = ''; $('qrRoom').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderGuest(); });
+$('phone').addEventListener('click', e => {
+  const b = e.target.closest('[data-g]'); if (!b) return;
+  const r = qrRoom, rr = R(r), g = b.dataset.g;
+  if (g === 'vup') { rr.vol = Math.min(CFG.audio.maxVolume, rr.vol + 5); log('GUEST', `Phone (QR, ${roomName(r)}): volume up`, `token ${TOK[master(r)]} verified`); qsysVol(r); }
+  if (g === 'vdn') { rr.vol = Math.max(0, rr.vol - 5); log('GUEST', `Phone (QR, ${roomName(r)}): volume down`, `token ${TOK[master(r)]} verified`); qsysVol(r); }
+  if (g === 'mute') { rr.mute = !rr.mute; log('GUEST', `Phone (QR, ${roomName(r)}): mic mute ${rr.mute ? 'on' : 'off'}`, `token ${TOK[master(r)]} verified`); qsysMute(r); }
+  if (g === 'share') { log('GUEST', `Phone (QR, ${roomName(r)}): share laptop`, `token ${TOK[master(r)]} verified`); share(r); }
+  if (g === 'help') { ticket++; phoneMsg = `Ticket #${ticket} sent to the help desk`; log('GUEST', `Help desk ticket #${ticket} from ${roomName(r)} (guest phone)`, `POST /api/helpdesk {"room":"${roomName(r)}","source":"qr","probe":"attached"}`); }
+  renderAll();
+});
+
+/* ================= bookings ================= */
+const BOOK = [
+  ['A', 9, 0, 9, 30, 'Weekly sync'], ['A', 11, 0, 12, 0, 'Design review'], ['A', 14, 0, 15, 0, 'Client call'],
+  ['B', 10, 0, 11, 0, 'Interviews'], ['B', 13, 0, 14, 0, 'Lunch and learn'], ['B', 16, 0, 16, 30, '1:1 Marc / Aiko'],
+  ['AB', 15, 30, 17, 0, 'All-hands (combined)']
+].map(([r, h1, m1, h2, m2, t]) => { const d = new Date(); const s = new Date(d); s.setHours(h1, m1, 0, 0); const e = new Date(d); e.setHours(h2, m2, 0, 0); return { r, s: s.getTime(), e: e.getTime(), t }; });
+const hm = t => { const d = new Date(t); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+function nextMeeting(r) { const now = Date.now(); return BOOK.filter(b => (b.r === r || b.r === 'AB') && b.e > now).sort((a, b) => a.s - b.s)[0]; }
+function renderBookings() {
+  const d0 = new Date(); d0.setHours(8, 0, 0, 0); const D0 = d0.getTime(), SPAN = 10 * 3600000;
+  const x = t => Math.max(0, Math.min(100, (t - D0) / SPAN * 100));
+  const now = Date.now();
+  const colr = r => r === 'AB' ? '#3cc7d4' : r === 'A' ? '#5aa7ff' : '#b391ff';
+  const row = r => `<div class="tl-row"><b style="color:${colr(r)}">${esc(CFG.names[r])}</b><div class="tl-track">${BOOK.filter(b => b.r === r || b.r === 'AB').map(b => `<div class="tl-blk${b.e < now ? ' past' : b.s <= now ? ' now' : ''}" style="left:${x(b.s)}%;width:${x(b.e) - x(b.s)}%;background:${colr(b.r)}" title="${esc(b.t)} ${hm(b.s)}–${hm(b.e)}">${esc(b.t)} · ${hm(b.s)}</div>`).join('')}${now >= D0 && now <= D0 + SPAN ? `<div class="tl-now" style="left:${x(now)}%"></div>` : ''}</div></div>`;
+  let axis = '<div class="tl-axis">'; for (let h = 8; h <= 18; h += 2) axis += `<span style="left:${(h - 8) * 10}%">${String(h).padStart(2, '0')}:00</span>`; axis += '</div>';
+  $('tl').innerHTML = row('A') + row('B') + axis;
+  const nx = r => { const b = nextMeeting(r); if (!b) return 'No more meetings today'; const mins = Math.round((b.s - now) / 60000); return b.s <= now ? `Now: ${esc(b.t)} until ${hm(b.e)}` : `Next: ${esc(b.t)} at ${hm(b.s)} (in ${mins >= 60 ? Math.floor(mins / 60) + ' h ' : ''}${mins % 60} min)`; };
+  const comb = BOOK.find(b => b.r === 'AB');
+  $('tlNext').innerHTML = `<div><b>${esc(CFG.names.A)}</b><small>${nx('A')}</small></div><div><b>${esc(CFG.names.B)}</b><small>${nx('B')}</small></div>
+    <div><b>Combined booking</b><small>${esc(comb.t)} ${hm(comb.s)}–${hm(comb.e)}. With the wall open, ${CFG.combine.sensorMode === 'auto' ? 'the rooms combine on their own' : CFG.combine.sensorMode === 'prompt' ? 'the panels ask to combine' : 'the sensor override decides'}.</small></div>`;
+}
+
+/* ================= auto-off when vacant ================= */
+const vacantSince = { A: 0, B: 0 };
+function checkVacancy() {
+  const units = isCombined() ? ['A'] : ROOMS;
+  units.forEach(r => {
+    const rr = R(r), occ = isCombined() ? (S.r.A.occ || S.r.B.occ) : S.r[r].occ;
+    if (!rr.power || rr.call || occ) { vacantSince[r] = 0; return; }
+    if (!vacantSince[r]) vacantSince[r] = Date.now();
+    if (Date.now() - vacantSince[r] > CFG.room.autoOffMinutesVacant * 60000) {
+      log('PROC', `${roomName(r)} vacant for ${CFG.room.autoOffMinutesVacant} min: turning off`); setPower(r, false); vacantSince[r] = 0; renderAll();
+    }
+  });
+}
+
 /* ================= tools ================= */
 $('wallBtn').addEventListener('click', moveWall);
 function tog(id, fn) { $(id).addEventListener('click', () => { const v = $(id).getAttribute('aria-pressed') !== 'true'; $(id).setAttribute('aria-pressed', v); fn(v); renderAll(); }); }
@@ -1067,8 +1325,9 @@ function renderClock() {
   $('clkT').textContent = hhmmss(d.getTime());
   $('clkD').textContent = d.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
-function renderAll() { renderPlan(); renderStatus(); ROOMS.forEach(renderTp); ROOMS.forEach(renderScreen); renderRouting(); renderCams(); renderHealth(); renderClock(); }
+function renderAll() { renderPlan(); renderStatus(); ROOMS.forEach(renderTp); ROOMS.forEach(renderScreen); renderRouting(); renderCams(); renderHealth(); renderGuest(); renderBookings(); renderClock(); }
 buildPlan(); buildAudio(); renderFilters();
+renderPresets(); $('cfgText').value = JSON.stringify(CFG, null, 2); saveVersion('initial (preset "Standard")', 0);
 log('PROC', 'Program start: Lakeview divisible room, 4-Series processor');
 log('SENSOR', 'Wall sensor: CLOSED', 'I/O 1 contact closed');
 log('QSYS', 'Connected to Q-SYS Core (QRC port 1710)');
@@ -1085,6 +1344,7 @@ setInterval(() => {
 setInterval(tickAudio, 120);
 setInterval(tickCams, 500);
 setInterval(renderHealth, 10000);
+setInterval(() => { checkVacancy(); renderBookings(); }, 30000);
 })();
 </script>
 

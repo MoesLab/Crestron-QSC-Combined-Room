@@ -17,9 +17,16 @@ Lakeview Room A and Room B: two Microsoft Teams rooms split by an airwall, run b
 - **Device health** — 21 devices with status, address, firmware, uptime and temperature, plus alert counts.
 - **Room probe** — one button checks pings, Q-SYS link, panels, displays, video routes, speaker zones with pink noise, microphones, echo canceller, cameras and the airwall sensor, then reports pass, warning or fail. Use the fault buttons to see it catch problems.
 
-## Planned
+- **Room configuration** — the processor's JSON config in an editor with four presets (Standard, Event hall, Sensor bypass, Maintenance), validation with clear errors, a review of every change before applying, saved versions and one-click rollback. Settings take effect immediately: wall sensor mode and override, auto-divide, room names, volume limits, camera defaults, auto-off when vacant, guest QR.
+- **Guest access** — a QR code per room, also on each LED wall's welcome screen, opening phone control (volume, mic mute, share, report a problem). The token changes after every meeting.
+- **Bookings** — today's timeline for both rooms, including a combined booking, with the next meeting on the welcome screens.
 
-A config editor with presets and wall sensor override; QR code and room bookings.
+## Try this
+
+1. Open the airwall and accept *Combine rooms* on a panel.
+2. Start a meeting, share the laptop, and watch the routing, audio and cameras follow.
+3. Apply the *Event hall* preset, close and reopen the wall: the rooms now combine on their own.
+4. Add a fault in the test tools, then run the room probe.
 
 ## System
 
