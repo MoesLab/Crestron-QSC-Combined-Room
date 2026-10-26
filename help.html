@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lakeview Room Help</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: phone-first help card stack — room header, five numbered tasks, troubleshooting, report form, contacts */
+:root {
+  --bg: #f2f5f8;
+  --surface: #ffffff;
+  --line: #d8e0e8;
+  --fg: #16202b;
+  --muted: #5a6877;
+  --accent: #0f8b99;
+  --accent-ink: #ffffff;
+  --room-a: #2f7fd8;
+  --room-b: #7b5cd6;
+  --ok: #1d8a4c;
+  --bad: #c0392b;
+  --font-display: "Saira Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0c1116; --surface: #141b22; --line: #26323f; --fg: #e3eaf1; --muted: #93a2b1; --accent: #3cc7d4; --accent-ink: #04161a; --room-a: #5aa7ff; --room-b: #b391ff; --ok: #4fd18b; --bad: #ff6f6b; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0c1116; --surface: #141b22; --line: #26323f; --fg: #e3eaf1; --muted: #93a2b1; --accent: #3cc7d4; --accent-ink: #04161a; --room-a: #5aa7ff; --room-b: #b391ff; --ok: #4fd18b; --bad: #ff6f6b; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 40px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 14px; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hero { border-radius: 14px; padding: 18px; background: linear-gradient(135deg, color-mix(in srgb, var(--roomc) 22%, var(--surface)), var(--surface)); border: 1px solid var(--line); }
+.hero .kick { font-family: var(--font-display); letter-spacing: .14em; font-size: 13px; color: var(--muted); text-transform: uppercase; }
+.hero h1 { font-family: var(--font-display); font-size: 34px; line-height: 1.05; margin: 4px 0 6px; color: var(--roomc); text-wrap: balance; }
+.hero p { margin: 0; color: var(--muted); }
+.tabs { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.tabs a { text-decoration: none; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-weight: 600; font-size: 14px; }
+.tabs a[aria-current="true"] { background: var(--roomc); border-color: var(--roomc); color: #fff; }
+.feats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.feats span { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+h2 { font-family: var(--font-display); font-size: 21px; letter-spacing: .04em; margin: 10px 0 0; }
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; }
+.num { width: 36px; height: 36px; border-radius: 50%; background: var(--roomc); color: #fff; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 18px; }
+.task h3 { margin: 4px 0 6px; font-size: 17px; }
+.task ol, .task ul { margin: 0; padding-left: 20px; }
+.task li { margin: 3px 0; }
+.task .tip { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.btnlike { display: inline-block; font-weight: 700; padding: 0 6px; border-radius: 5px; background: color-mix(in srgb, var(--roomc) 14%, transparent); white-space: nowrap; }
+.panel-sketch { margin-top: 10px; border-radius: 10px; background: #0f161e; padding: 10px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-width: 100%; }
+.panel-sketch div { border-radius: 7px; background: rgba(255,255,255,.07); color: #dfe8f1; font-size: 11.5px; font-weight: 600; padding: 8px 6px; line-height: 1.2; min-height: 48px; }
+.panel-sketch div.hl { box-shadow: inset 0 0 0 2px var(--roomc); background: color-mix(in srgb, var(--roomc) 28%, transparent); }
+.panel-sketch .bar { grid-column: 1 / -1; min-height: 0; padding: 6px 8px; display: flex; justify-content: space-between; font-weight: 500; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 16px; }
+details + details { margin-top: 8px; }
+summary { cursor: pointer; padding: 13px 0; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--muted); font-size: 20px; line-height: 1; }
+details[open] summary::after { content: "–"; }
+details p, details ul { margin: 0 0 14px; }
+details ul { padding-left: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 10px; }
+label { font-weight: 600; font-size: 14px; display: grid; gap: 4px; }
+select, input, textarea { border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; background: var(--bg); width: 100%; }
+textarea { min-height: 90px; resize: vertical; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 500; }
+.check input { width: auto; }
+.send { border: 0; border-radius: 10px; padding: 12px; background: var(--fg); color: var(--bg); font-weight: 700; cursor: pointer; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.done { border: 1px solid var(--ok); border-radius: 10px; padding: 12px; color: var(--ok); font-weight: 600; }
+.contact { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; font-size: 15px; }
+.contact dt { color: var(--muted); }
+.contact dd { margin: 0; font-weight: 600; word-break: break-word; }
+.mono { font-family: var(--font-mono); }
+footer { text-align: center; font-size: 13px; color: var(--muted); margin-top: 8px; }
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app">
+  <section class="hero">
+    <div class="kick">Room help</div>
+    <h1 id="roomTitle">Lakeview A</h1>
+    <p id="roomSub">Everything you need to run a meeting in this room, in five steps.</p>
+    <nav class="tabs" id="tabs" aria-label="Choose room">
+      <a href="#lakeview-a" data-k="A">Lakeview A</a><a href="#lakeview-b" data-k="B">Lakeview B</a><a href="#lakeview-ab" data-k="AB">A + B combined</a>
+    </nav>
+    <div class="feats" id="feats"></div>
+  </section>
+
+  <h2>Run a meeting</h2>
+
+  <article class="task"><span class="num">1</span><div>
+    <h3>Turn the room on</h3>
+    <p style="margin:0">Touch the panel on the table. If the screen is dark, tap <span class="btnlike">Turn room on</span>. The LED wall shows the room name and your next booking within a few seconds.</p>
+    <div class="panel-sketch" aria-hidden="true"><div>Start Teams meeting</div><div>Share laptop</div><div>Combine rooms</div><div class="hl">Turn room on</div><div class="bar"><span>− volume +</span><span>Mute mics</span></div></div>
+  </div></article>
+
+  <article class="task"><span class="num">2</span><div>
+    <h3>Start or join a Teams meeting</h3>
+    <ul>
+      <li><b>Booked meeting:</b> it appears on the Teams console at the table. Tap <span class="btnlike">Join</span>.</li>
+      <li><b>Meeting right now:</b> tap <span class="btnlike">Start Teams meeting</span> on the room panel.</li>
+    </ul>
+    <p class="tip">The camera only sends video during a meeting. It frames the group and follows whoever is speaking.</p>
+  </div></article>
+
+  <article class="task"><span class="num">3</span><div>
+    <h3>Share your laptop</h3>
+    <ol>
+      <li>Plug the HDMI cable at the table into your laptop (use the adapter ring for USB-C).</li>
+      <li>Tap <span class="btnlike">Share laptop</span>.</li>
+    </ol>
+    <p class="tip">In a meeting, remote people see your screen too. Tap <span class="btnlike">Stop sharing</span> when you're done.</p>
+  </div></article>
+
+  <article class="task"><span class="num">4</span><div>
+    <h3>Volume and microphones</h3>
+    <ul>
+      <li>Use <span class="btnlike">−</span> and <span class="btnlike">+</span> at the bottom of the panel for the room speakers.</li>
+      <li><span class="btnlike">Mute mics</span> turns red when the room can't be heard. Tap it again to talk.</li>
+    </ul>
+    <p class="tip">The microphones are in the ceiling above the table. Speak normally; there's no need to lean in.</p>
+  </div></article>
+
+  <article class="task"><span class="num">5</span><div>
+    <h3>When you finish</h3>
+    <ol>
+      <li>Tap <span class="btnlike">Leave meeting</span>.</li>
+      <li>Tap <span class="btnlike">Turn room off</span>, or just leave: the room turns itself off when it has been empty for a while.</li>
+      <li>Take your laptop and leave the HDMI cable on the table.</li>
+    </ol>
+  </div></article>
+
+  <h2>Using both rooms together</h2>
+  <article class="task"><span class="num" style="background:var(--accent)">+</span><div>
+    <h3>Combine Lakeview A and B</h3>
+    <ol>
+      <li>Ask facilities to open the airwall between the rooms (book the combined room and it's done for you).</li>
+      <li>When the wall is fully open, the panels ask <i>Combine the rooms?</i> Tap <span class="btnlike">Combine rooms</span>.</li>
+      <li>Both LED walls, cameras, microphones and speakers now work as one room. Either panel controls everything.</li>
+    </ol>
+    <p class="tip">Rooms can't combine while either side is in a meeting, so leave it first. To split again, tap <span class="btnlike">Divide rooms</span>; closing the airwall also splits them.</p>
+  </div></article>
+
+  <h2>Something not working?</h2>
+  <div>
+    <details><summary>Remote people can't hear us</summary><ul><li>Check <span class="btnlike">Mute mics</span> on the panel isn't red.</li><li>Make sure you joined from the room (Teams console), not only from your laptop.</li><li>If your laptop is also in the call, mute its microphone and speakers to avoid echo.</li></ul></details>
+    <details><summary>We can't hear the remote people</summary><ul><li>Press <span class="btnlike">+</span> a few times on the panel.</li><li>Check the meeting on the Teams console is not muted on their side.</li></ul></details>
+    <details><summary>My laptop doesn't show on the screen</summary><ul><li>Check the panel shows <i>HDMI connected</i> under Share laptop. If not, unplug and replug the cable.</li><li>On Windows press <span class="mono">Win + P</span> and choose <i>Duplicate</i>; on a Mac choose <i>Mirror</i> in Displays.</li><li>Tap <span class="btnlike">Share laptop</span> again.</li></ul></details>
+    <details><summary>The rooms won't combine</summary><ul><li>The airwall must be fully open; the panel says <i>Airwall is open</i> when it is.</li><li>Leave any running meeting on both sides first.</li><li>If the panel says combining is switched off, the room is in maintenance; contact the help desk.</li></ul></details>
+    <details><summary>The LED wall is black</summary><ul><li>Tap <span class="btnlike">Turn room on</span> and wait 10 seconds.</li><li>Still black? Report it below; the system runs a self-test and sends the result to the technicians.</li></ul></details>
+  </div>
+
+  <h2>Report a problem</h2>
+  <form class="card" id="report" novalidate>
+    <label for="cat">What's wrong?
+      <select id="cat" required>
+        <option value="">Choose one</option><option>No sound / can't hear</option><option>Microphones</option><option>LED wall or picture</option><option>Laptop sharing</option><option>Camera</option><option>Combining rooms</option><option>Something else</option>
+      </select></label>
+    <label for="desc">Details (optional)<textarea id="desc" placeholder="What happened, and what were you trying to do?"></textarea></label>
+    <label for="nm">Your name (optional)<input id="nm" autocomplete="name"></label>
+    <label class="check" for="probe"><input type="checkbox" id="probe" checked> Run a room self-test and attach the result</label>
+    <button class="send" type="submit">Send to the help desk</button>
+    <p class="note" id="formNote">The room name is added for you. A technician usually responds within 15 minutes during business hours.</p>
+  </form>
+
+  <h2>Contact</h2>
+  <div class="card">
+    <dl class="contact">
+      <dt>Help desk</dt><dd>ext. 4357 (HELP)</dd>
+      <dt>Email</dt><dd class="mono">av-help@lakeview.example</dd>
+      <dt>Hours</dt><dd>Mon–Fri, 8:00–18:00</dd>
+    </dl>
+  </div>
+
+  <footer>Lakeview meeting rooms · Moe Azizi</footer>
+</div>
+
+<script>
+(() => {
+  const ROOMS = {
+    A: { title: 'Lakeview A', color: 'var(--room-a)', sub: 'Everything you need to run a meeting in this room, in five steps.', feats: ['Teams Room', 'LED wall', 'Camera', 'Ceiling mic', 'HDMI at the table', 'Seats 8'] },
+    B: { title: 'Lakeview B', color: 'var(--room-b)', sub: 'Everything you need to run a meeting in this room, in five steps.', feats: ['Teams Room', 'LED wall', 'Camera', 'Ceiling mic', 'HDMI at the table', 'Seats 8'] },
+    AB: { title: 'Lakeview A + B', color: 'var(--accent)', sub: 'Both rooms combined into one large room. Either panel controls everything.', feats: ['One Teams Room', 'Two LED walls', 'Two cameras, voice switching', 'Both ceiling mics', 'HDMI at both tables', 'Seats 16'] }
+  };
+  const keyFromHash = () => ({ '#lakeview-b': 'B', '#lakeview-ab': 'AB' })[location.hash] || 'A';
+  let key = keyFromHash();
+  function render() {
+    const r = ROOMS[key];
+    document.documentElement.style.setProperty('--roomc', r.color);
+    document.getElementById('roomTitle').textContent = r.title;
+    document.getElementById('roomSub').textContent = r.sub;
+    document.getElementById('feats').innerHTML = r.feats.map(f => `<span>${f}</span>`).join('');
+    document.querySelectorAll('#tabs a').forEach(a => a.setAttribute('aria-current', a.dataset.k === key));
+    document.title = r.title + ' · Room help';
+  }
+  document.getElementById('tabs').addEventListener('click', e => {
+    const a = e.target.closest('a'); if (!a) return;
+    e.preventDefault(); key = a.dataset.k;
+    try { history.replaceState(null, '', a.getAttribute('href')); } catch (_) {}
+    render();
+  });
+  window.addEventListener('hashchange', () => { key = keyFromHash(); render(); });
+  document.getElementById('report').addEventListener('submit', e => {
+    e.preventDefault();
+    const cat = document.getElementById('cat');
+    const note = document.getElementById('formNote');
+    if (!cat.value) { note.textContent = 'Choose what is wrong first.'; note.style.color = 'var(--bad)'; cat.focus(); return; }
+    const n = 1040 + Math.floor(Math.random() * 60);
+    const probe = document.getElementById('probe').checked;
+    e.target.innerHTML = `<div class="done">Ticket #${n} created for ${ROOMS[key].title}: “${cat.value}”.${probe ? ' The room self-test result is attached.' : ''}</div><p class="note">In this demo the ticket stays on this page; in the real room it goes to the help desk system.</p>`;
+  });
+  render();
+})();
+</script>
+
+</body>
+</html>

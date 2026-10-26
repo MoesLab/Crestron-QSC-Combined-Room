@@ -279,6 +279,32 @@ textarea.cfg:focus-visible { outline: 2px solid var(--accent); outline-offset: 1
 .tl-next { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 12px; }
 .tl-next div { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--surface-2); font-size: 13px; }
 .tl-next small { display: block; color: var(--muted); }
+/* usage patterns */
+.us { --s-a: #3987e5; --s-c: #199e70; --s-b: #9085e9; }
+.us-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.sample { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--warn); border: 1px solid var(--warn); border-radius: 4px; padding: 2px 8px; }
+.us-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; margin-top: 12px; }
+@media (max-width: 1050px) { .us-grid { grid-template-columns: minmax(0, 1fr); } }
+.fig { border: 1px solid var(--line); border-radius: 6px; padding: 12px; background: var(--surface-2); min-width: 0; position: relative; }
+.fig h3 { margin: 0 0 2px; font-size: 14px; } .fig .cap { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
+.fig svg { width: 100%; display: block; overflow: visible; }
+.fig svg text { font-family: var(--font-body); font-size: 11px; fill: var(--muted); }
+.fig svg .lab { fill: var(--fg); font-weight: 600; }
+.fig .gridl { stroke: #26323f; stroke-width: 1; }
+.fig .hit:hover, .fig .hit:focus { opacity: .8; outline: none; }
+.fig .cell:hover, .fig .cell:focus { stroke: #e2eaf1; stroke-width: 2; outline: none; }
+.lgd { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--fg); margin-bottom: 6px; }
+.lgd i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+.tip { position: absolute; pointer-events: none; background: #070a0d; border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font-size: 12px; min-width: 150px; box-shadow: 0 6px 16px rgba(0,0,0,.4); z-index: 5; }
+.tip b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+.tip .k { display: inline-block; width: 12px; height: 3px; border-radius: 2px; vertical-align: 3px; margin-right: 6px; }
+.tip .r { color: var(--muted); }
+.insight { margin: 12px 0 0; font-size: 13.5px; }
+.insight b { color: var(--accent); }
+.ustable { overflow-x: auto; margin-top: 10px; }
+.ustable table { border-collapse: collapse; font-size: 12.5px; min-width: 420px; width: 100%; }
+.ustable th, .ustable td { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: right; font-variant-numeric: tabular-nums; }
+.ustable th:first-child, .ustable td:first-child { text-align: left; }
 /* cameras */
 .cams { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
 @media (max-width: 900px) { .cams { grid-template-columns: minmax(0, 1fr); } }
@@ -422,13 +448,31 @@ table.dev { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width
         <div class="qrbox" id="qrBox"></div>
         <div class="phone" id="phone"></div>
       </div>
-      <p class="hint" style="margin:0 14px 14px">The QR code also shows on each LED wall's welcome screen. Its token changes after every meeting, so a code photographed today cannot control the room tomorrow.</p>
+      <p class="hint" style="margin:0 14px 14px">Scanning opens the room's help page on the phone: how to run a meeting, combine the rooms, fix common problems and report one. A report also starts the room probe, so technicians get a test result with the ticket.</p>
     </div>
   </section>
 
   <section class="card">
     <div class="card-h"><h2>Bookings · today</h2><span class="hint">From the room calendars. Combined bookings span both rooms.</span></div>
     <div class="card-b"><div class="tl" id="tl"></div><div class="tl-next" id="tlNext"></div></div>
+  </section>
+
+  <section class="card us">
+    <div class="card-h"><h2>Usage patterns</h2><span class="hint">How the rooms are really used, from the processor's event history</span></div>
+    <div class="card-b">
+      <div class="us-filters"><div class="segs" id="usPeriod"><button data-d="7">Last 7 days</button><button data-d="30" aria-pressed="true">Last 30 days</button><button data-d="90">Last 90 days</button></div><span class="sample">Sample data</span><button class="btn sm" id="usTableBtn" aria-pressed="false">Show table</button></div>
+      <div class="kpis" id="usKpis"></div>
+      <div class="us-grid">
+        <figure class="fig" style="margin:0"><h3>Meeting hours by room mode</h3><p class="cap" id="usBarCap">Per working day</p>
+          <div class="lgd"><span><i style="background:var(--s-a)"></i>Room A alone</span><span><i style="background:var(--s-c)"></i>Combined A + B</span><span><i style="background:var(--s-b)"></i>Room B alone</span></div>
+          <svg id="usBars" viewBox="0 0 640 250" role="img" aria-label="Stacked columns of meeting hours per period: Room A alone, combined, Room B alone"></svg>
+          <div class="ustable" id="usTable" hidden></div></figure>
+        <figure class="fig" style="margin:0"><h3>When the rooms are busy</h3><p class="cap">Share of time in use, both rooms, by weekday and hour</p>
+          <svg id="usHeat" viewBox="0 0 470 250" role="img" aria-label="Heatmap of room use by weekday and hour"></svg></figure>
+      </div>
+      <p class="insight" id="usInsight"></p>
+      <div class="tip" id="usTip" hidden></div>
+    </div>
   </section>
 
   <section class="row4">
@@ -481,10 +525,10 @@ const S = {
 const COLOR = { A: 'var(--room-a)', B: 'var(--room-b)' };
 /* ================= configuration (what lives in \user\lakeview-config.json) ================= */
 const PRESETS = {
-  'Standard': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'prompt', autoDivideOnClose: true }, audio: { defaultVolume: 55, maxVolume: 90 }, camera: { defaultMode: 'group', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 15 }, guest: { qrEnabled: true, rotateTokenEachMeeting: true } },
-  'Event hall': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview Hall' }, combine: { sensorMode: 'auto', autoDivideOnClose: true }, audio: { defaultVolume: 65, maxVolume: 100 }, camera: { defaultMode: 'speaker', voiceSwitchHoldSec: 4 }, room: { autoOffMinutesVacant: 60 }, guest: { qrEnabled: true, rotateTokenEachMeeting: true } },
-  'Sensor bypass': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'override-open', autoDivideOnClose: false }, audio: { defaultVolume: 55, maxVolume: 90 }, camera: { defaultMode: 'group', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 15 }, guest: { qrEnabled: true, rotateTokenEachMeeting: true } },
-  'Maintenance': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'override-closed', autoDivideOnClose: true }, audio: { defaultVolume: 40, maxVolume: 70 }, camera: { defaultMode: 'preset', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 5 }, guest: { qrEnabled: false, rotateTokenEachMeeting: true } }
+  'Standard': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'prompt', autoDivideOnClose: true }, audio: { defaultVolume: 55, maxVolume: 90 }, camera: { defaultMode: 'group', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 15 }, guest: { qrEnabled: true, showOnWelcomeScreen: true } },
+  'Event hall': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview Hall' }, combine: { sensorMode: 'auto', autoDivideOnClose: true }, audio: { defaultVolume: 65, maxVolume: 100 }, camera: { defaultMode: 'speaker', voiceSwitchHoldSec: 4 }, room: { autoOffMinutesVacant: 60 }, guest: { qrEnabled: true, showOnWelcomeScreen: true } },
+  'Sensor bypass': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'override-open', autoDivideOnClose: false }, audio: { defaultVolume: 55, maxVolume: 90 }, camera: { defaultMode: 'group', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 15 }, guest: { qrEnabled: true, showOnWelcomeScreen: true } },
+  'Maintenance': { names: { A: 'Lakeview A', B: 'Lakeview B', combined: 'Lakeview A + B' }, combine: { sensorMode: 'override-closed', autoDivideOnClose: true }, audio: { defaultVolume: 40, maxVolume: 70 }, camera: { defaultMode: 'preset', voiceSwitchHoldSec: 2.5 }, room: { autoOffMinutesVacant: 5 }, guest: { qrEnabled: false, showOnWelcomeScreen: false } }
 };
 let CFG = JSON.parse(JSON.stringify(PRESETS['Standard']));
 const sensorOverridden = () => CFG.combine.sensorMode.startsWith('override');
@@ -604,7 +648,6 @@ function endCall(room, quiet) {
   const r = R(room); const m = master(room);
   r.call = false;
   log('UC', `UC engine ${m}: left the meeting${quiet ? ' (system off)' : ''}`);
-  if (CFG.guest.rotateTokenEachMeeting) { (isCombined() ? ROOMS : [m]).forEach(x => TOK[x] = newTok()); log('GUEST', `Guest QR token renewed for ${roomName(m)}`); }
   if (!quiet) (isCombined() ? ROOMS : [room]).forEach(routeDisplay);
 }
 function share(room) {
@@ -886,7 +929,7 @@ function renderScreen(room) {
   } else {
     const t = new Date();
     const nx = nextMeeting(master(room));
-    html = `<div class="scr idle"><div class="big">${esc(roomName(room).toUpperCase())}</div><div class="tm">${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}</div><div class="sub">${nx ? `Next: ${esc(nx.t)} at ${hm(nx.s)}` : 'No more meetings today'}</div><div class="sub">Tap Start Teams meeting on the touch panel, or plug in the HDMI cable to share.</div>${CFG.guest.qrEnabled && qrData(master(room)) ? `<div class="qr"><img alt="QR code for phone control" src="${qrData(master(room))}"><span>Scan for phone control</span></div>` : ''}</div>`;
+    html = `<div class="scr idle"><div class="big">${esc(roomName(room).toUpperCase())}</div><div class="tm">${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}</div><div class="sub">${nx ? `Next: ${esc(nx.t)} at ${hm(nx.s)}` : 'No more meetings today'}</div><div class="sub">Tap Start Teams meeting on the touch panel, or plug in the HDMI cable to share.</div>${CFG.guest.qrEnabled && CFG.guest.showOnWelcomeScreen && qrData(helpKey(room)) ? `<div class="qr"><img alt="QR code for room help" src="${qrData(helpKey(room))}"><span>Scan for room help</span></div>` : ''}</div>`;
     label = 'Welcome screen'; cls = 'acc';
   }
   el.innerHTML = html;
@@ -1169,7 +1212,7 @@ const SCHEMA = {
   'camera.voiceSwitchHoldSec': v => typeof v === 'number' && v >= 1 && v <= 10 || 'number 1–10',
   'room.autoOffMinutesVacant': v => Number.isInteger(v) && v >= 5 && v <= 120 || 'whole number 5–120',
   'guest.qrEnabled': v => typeof v === 'boolean' || 'true or false',
-  'guest.rotateTokenEachMeeting': v => typeof v === 'boolean' || 'true or false'
+  'guest.showOnWelcomeScreen': v => typeof v === 'boolean' || 'true or false'
 };
 const flat = (o, p = '') => Object.entries(o).reduce((a, [k, v]) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.assign(a, flat(v, p + k + '.')) : (a[p + k] = v, a)), {});
 const VERS = [];
@@ -1235,10 +1278,10 @@ $('cfgVer').addEventListener('click', e => { const b = e.target.closest('[data-r
   applyCfg(JSON.parse(JSON.stringify(v.cfg)), `roll back to v${v.n}`); showMsg(`<b>Rolled back</b> to version ${v.n}.`, 'ok'); });
 
 /* ================= guest QR and phone ================= */
-const newTok = () => Math.random().toString(36).slice(2, 6).toUpperCase();
-const TOK = { A: newTok(), B: newTok() };
 const qrCache = {};
-const guestUrl = r => `https://moeslab.github.io/Crestron-QSC-Combined-Room/#guest-${r}-${TOK[r]}`;
+const HELP_BASE = 'https://moeslab.github.io/Crestron-QSC-Combined-Room/help.html';
+const helpKey = r => isCombined() ? 'AB' : r;
+const guestUrl = k => `${HELP_BASE}#lakeview-${k.toLowerCase()}`;
 function qrData(r) {
   const url = guestUrl(r);
   if (qrCache[url]) return qrCache[url];
@@ -1250,26 +1293,26 @@ function qrData(r) {
 }
 let qrRoom = 'A', ticket = 1041, phoneMsg = '';
 function renderGuest() {
-  const r = qrRoom, rr = R(r);
-  const data = CFG.guest.qrEnabled ? qrData(master(r)) : '';
+  const k = helpKey(qrRoom), url = guestUrl(k), name = k === 'AB' ? CFG.names.combined : CFG.names[k];
+  const data = CFG.guest.qrEnabled ? qrData(k) : '';
   $('qrBox').innerHTML = CFG.guest.qrEnabled
-    ? `${data ? `<img alt="QR code for phone control of ${esc(roomName(r))}" src="${data}">` : '<div class="hint">QR library did not load</div>'}<code>${esc(guestUrl(master(r)))}</code><span class="hint">token ${TOK[master(r)]}</span>`
-    : '<div class="hint" style="max-width:180px">Guest QR access is turned off in the room configuration.</div>';
-  $('phone').innerHTML = CFG.guest.qrEnabled ? `<h4>${esc(roomName(r))}</h4><p>${rr.power ? (rr.call ? 'Meeting in progress' : 'Room is on') : 'Room is off'} · phone control</p>
-    <div class="pr"><button data-g="vdn" aria-label="Volume down">−</button><span class="vol">Volume ${rr.vol}%</span><button data-g="vup" aria-label="Volume up">+</button></div>
-    <div class="pr"><button class="mut" data-g="mute" aria-pressed="${rr.mute}">${rr.mute ? 'Mics muted' : 'Mute mics'}</button><button data-g="share">${rr.src === 'laptop' ? 'Stop share' : 'Share laptop'}</button></div>
+    ? `${data ? `<img alt="QR code for the ${esc(name)} help page" src="${data}">` : '<div class="hint">QR library did not load</div>'}<code>${esc(url)}</code><a class="btn sm" href="${url}" target="_blank" rel="noopener">Open help page ↗</a>`
+    : '<div class="hint" style="max-width:180px">Guest QR is turned off in the room configuration.</div>';
+  $('phone').innerHTML = CFG.guest.qrEnabled ? `<p style="font-size:11px">Room help</p><h4>${esc(name)}</h4>
+    <p>Run a meeting in five steps</p>
+    <button data-g="step" data-n="Start or join a Teams meeting">1 · Start a meeting</button>
+    <button data-g="step" data-n="Share your laptop">3 · Share your laptop</button>
+    <button data-g="step" data-n="Combine Lakeview A and B">+ · Combine the rooms</button>
     <button class="help" data-g="help">Report a problem</button>${phoneMsg ? `<span class="done">${esc(phoneMsg)}</span>` : ''}` : '<h4>Scan disabled</h4><p>Ask the help desk for assistance.</p>';
 }
 $('qrRoom').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; qrRoom = b.dataset.r; phoneMsg = ''; $('qrRoom').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderGuest(); });
 $('phone').addEventListener('click', e => {
   const b = e.target.closest('[data-g]'); if (!b) return;
-  const r = qrRoom, rr = R(r), g = b.dataset.g;
-  if (g === 'vup') { rr.vol = Math.min(CFG.audio.maxVolume, rr.vol + 5); log('GUEST', `Phone (QR, ${roomName(r)}): volume up`, `token ${TOK[master(r)]} verified`); qsysVol(r); }
-  if (g === 'vdn') { rr.vol = Math.max(0, rr.vol - 5); log('GUEST', `Phone (QR, ${roomName(r)}): volume down`, `token ${TOK[master(r)]} verified`); qsysVol(r); }
-  if (g === 'mute') { rr.mute = !rr.mute; log('GUEST', `Phone (QR, ${roomName(r)}): mic mute ${rr.mute ? 'on' : 'off'}`, `token ${TOK[master(r)]} verified`); qsysMute(r); }
-  if (g === 'share') { log('GUEST', `Phone (QR, ${roomName(r)}): share laptop`, `token ${TOK[master(r)]} verified`); share(r); }
-  if (g === 'help') { ticket++; phoneMsg = `Ticket #${ticket} sent to the help desk`; log('GUEST', `Help desk ticket #${ticket} from ${roomName(r)} (guest phone)`, `POST /api/helpdesk {"room":"${roomName(r)}","source":"qr","probe":"attached"}`); }
-  renderAll();
+  const k = helpKey(qrRoom), name = k === 'AB' ? CFG.names.combined : CFG.names[k];
+  if (b.dataset.g === 'step') { phoneMsg = `Opened “${b.dataset.n}”`; log('GUEST', `Help page (${name}): opened “${b.dataset.n}”`, `GET ${guestUrl(k)}`, 'in'); }
+  if (b.dataset.g === 'help') { ticket++; phoneMsg = `Ticket #${ticket} sent to the help desk`; log('GUEST', `Help desk ticket #${ticket} from ${name} (help page)`, `POST /api/helpdesk {"room":"${name}","source":"qr-help-page","selfTest":"attached"}`, 'in');
+    if (!probing && !ROOMS.some(x => S.r[x].call)) runProbe(); }
+  renderGuest();
 });
 
 /* ================= bookings ================= */
@@ -1308,6 +1351,139 @@ function checkVacancy() {
   });
 }
 
+/* ================= usage patterns (sample data, seeded so it is the same every visit) ================= */
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const USAGE = (() => {
+  const rnd = mulberry32(906);
+  const DOW = { 1: .8, 2: 1.1, 3: 1.15, 4: 1.1, 5: .7 };
+  const HR = { 8: .35, 9: .9, 10: 1.3, 11: 1.2, 12: .5, 13: .9, 14: 1.25, 15: 1.1, 16: .75, 17: .3 };
+  const days = [];
+  const d = new Date(); d.setHours(12, 0, 0, 0);
+  for (let i = 1; days.length < 66; i++) {
+    const day = new Date(d.getTime() - i * 86400000), w = day.getDay();
+    if (w === 0 || w === 6) continue;
+    const rec = { date: day, w, A: 0, B: 0, C: 0, booked: 0, ghost: 0, hours: {} };
+    for (let h = 8; h <= 17; h++) {
+      const combined = w === 4 && h >= 15 && h <= 16 && rnd() < .7;
+      if (combined) { rec.C++; rec.hours[h] = 2; rec.booked++; continue; }
+      let used = 0;
+      ['A', 'B'].forEach(r => {
+        let p = .5 * DOW[w] * HR[h] * (r === 'B' ? .82 : 1);
+        if (w === 5 && h >= 14) p *= .45;
+        const booked = rnd() < Math.min(.95, p * 1.12);
+        if (booked) { rec.booked++; if (rnd() < .09) rec.ghost++; else { rec[r]++; used++; } }
+      });
+      rec.hours[h] = used;
+    }
+    days.push(rec);
+  }
+  return days.reverse();
+})();
+let usDays = 30;
+const fmtD = d => d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+function usSlice() { const n = { 7: 5, 30: 22, 90: 65 }[usDays]; return USAGE.slice(-n); }
+function usBuckets(sl) {
+  if (usDays !== 90) return sl.map(r => ({ label: r.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }), long: fmtD(r.date), A: r.A, C: r.C, B: r.B }));
+  const out = [];
+  for (let i = 0; i < sl.length; i += 5) {
+    const g = sl.slice(i, i + 5);
+    out.push({ label: g[0].date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }), long: `Week of ${fmtD(g[0].date)}`, A: g.reduce((a, r) => a + r.A, 0), C: g.reduce((a, r) => a + r.C, 0), B: g.reduce((a, r) => a + r.B, 0) });
+  }
+  return out;
+}
+const tipEl = $('usTip');
+function showTip(ev, html) {
+  const fig = tipEl.parentElement.getBoundingClientRect(); const t = ev.target.getBoundingClientRect ? ev.target.getBoundingClientRect() : fig;
+  tipEl.innerHTML = html; tipEl.hidden = false;
+  let x = (ev.clientX || t.left + t.width / 2) - fig.left + 14, y = (ev.clientY || t.top) - fig.top - 10;
+  if (x + 190 > fig.width) x -= 210;
+  tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+}
+const hideTip = () => { tipEl.hidden = true; };
+const SER = [['A', 'Room A alone', 'var(--s-a)'], ['C', 'Combined A + B', 'var(--s-c)'], ['B', 'Room B alone', 'var(--s-b)']];
+function renderUsage() {
+  const sl = usSlice(), bk = usBuckets(sl);
+  // KPIs
+  const hA = sl.reduce((a, r) => a + r.A, 0), hB = sl.reduce((a, r) => a + r.B, 0), hC = sl.reduce((a, r) => a + r.C, 0);
+  const booked = sl.reduce((a, r) => a + r.booked, 0), ghost = sl.reduce((a, r) => a + r.ghost, 0);
+  const util = (hA + hB + 2 * hC) / (sl.length * 10 * 2) * 100;
+  $('usKpis').innerHTML = `<div class="kpi"><b>${util.toFixed(0)}%</b><span>of bookable hours in use</span></div>
+    <div class="kpi"><b>${hA + hB + hC} h</b><span>meeting hours (${sl.length} working days)</span></div>
+    <div class="kpi"><b>${(hC / Math.max(1, hA + hB + hC) * 100).toFixed(0)}%</b><span>of hours in combined mode</span></div>
+    <div class="kpi"><b>${ghost}</b><span>no-show bookings (${(ghost / Math.max(1, booked) * 100).toFixed(0)}% of bookings)</span></div>`;
+  $('usBarCap').textContent = usDays === 90 ? 'Per week (5 working days)' : 'Per working day';
+  // stacked columns
+  const W = 640, H = 250, L = 34, R = 92, T = 10, B = 26;
+  const max = Math.max(...bk.map(b => b.A + b.B + b.C)), top = Math.ceil(max / (usDays === 90 ? 20 : 4)) * (usDays === 90 ? 20 : 4);
+  const y = v => T + (H - T - B) * (1 - v / top), step = (W - L - R) / bk.length, bw = Math.min(34, step * .68);
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const v = top / 4 * i; g += `<line class="gridl" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`; }
+  g += `<text x="${L + 4}" y="${T - 2}">hours</text>`;
+  const every = Math.ceil(bk.length / 8);
+  bk.forEach((b, i) => {
+    const x = L + i * step + (step - bw) / 2; let acc = 0;
+    SER.forEach(([k, name, col], si) => {
+      const v = b[k]; if (!v) return;
+      const y1 = y(acc + v), y0 = y(acc); acc += v;
+      const isTop = !SER.slice(si + 1).some(([k2]) => b[k2]);
+      const hgt = Math.max(0, y0 - y1 - 2);
+      g += isTop ? `<path class="hit" tabindex="0" data-i="${i}" data-k="${k}" fill="${col}" d="M${x} ${y0 - 2}V${y1 + 4}q0 -4 4 -4h${bw - 8}q4 0 4 4V${y0 - 2}z"/>`
+                 : `<rect class="hit" tabindex="0" data-i="${i}" data-k="${k}" x="${x}" y="${y1}" width="${bw}" height="${hgt}" fill="${col}"/>`;
+    });
+    if (i % every === 0 || (i === bk.length - 1 && i % every >= every / 2)) g += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${b.label}</text>`;
+  });
+  // direct labels on the latest column
+  const last = bk[bk.length - 1], lx = L + (bk.length - 1) * step + (step - bw) / 2 + bw + 8; let acc = 0; const placed = [];
+  SER.forEach(([k, name]) => { const v = last[k]; if (!v) return; let yy = y(acc + v / 2) + 4; acc += v; if (placed.length && yy > placed[placed.length - 1] - 13) yy = placed[placed.length - 1] - 13; placed.push(yy); g += `<text class="lab" x="${lx}" y="${yy}">${name.replace(' alone', '')} ${v} h</text>`; });
+  $('usBars').innerHTML = g;
+  $('usBars').querySelectorAll('.hit').forEach(el => {
+    const b = bk[+el.dataset.i], tot = b.A + b.B + b.C;
+    const html = `<div class="r">${esc(b.long)}</div>` + SER.map(([k, n, c]) => `<div><span class="k" style="background:${c}"></span>${b[k]} h <span class="r">${n}</span></div>`).join('') + `<div class="r" style="margin-top:3px">Total ${tot} h</div>`;
+    el.addEventListener('pointermove', ev => showTip(ev, html)); el.addEventListener('focus', ev => showTip(ev, html));
+    el.addEventListener('pointerleave', hideTip); el.addEventListener('blur', hideTip);
+  });
+  // table view
+  $('usTable').innerHTML = `<table><tr><th>${usDays === 90 ? 'Week of' : 'Day'}</th><th>Room A</th><th>Combined</th><th>Room B</th><th>Total</th></tr>${bk.map(b => `<tr><td>${esc(b.long)}</td><td>${b.A}</td><td>${b.C}</td><td>${b.B}</td><td>${b.A + b.B + b.C}</td></tr>`).join('')}</table>`;
+  // heatmap: weekday x hour
+  const DN = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const cells = [];
+  for (let w = 1; w <= 5; w++) for (let h = 8; h <= 17; h++) {
+    const ds = sl.filter(r => r.w === w);
+    const v = ds.length ? ds.reduce((a, r) => a + (r.hours[h] || 0), 0) / (ds.length * 2) : null;
+    cells.push({ w, h, v, n: ds.length });
+  }
+  const HL = 38, HT = 8, cw = (470 - HL - 4) / 10, ch = 34;
+  const ramp = ['#17283b', '#1c4a7e', '#2a6dc0', '#4f94e6', '#8dbcf0', '#cde2fb'];
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const col = v => { const t = Math.max(0, Math.min(1, v)) * (ramp.length - 1), i = Math.min(ramp.length - 2, Math.floor(t)), f = t - i; const a = hex(ramp[i]), b = hex(ramp[i + 1]); return `rgb(${a.map((c, j) => Math.round(c + (b[j] - c) * f)).join(',')})`; };
+  let hg = '';
+  const valid = cells.filter(c => c.v !== null), peak = valid.reduce((a, c) => c.v > a.v ? c : a, valid[0]), low = valid.reduce((a, c) => c.v < a.v ? c : a, valid[0]);
+  cells.forEach(c => {
+    const x = HL + (c.h - 8) * cw, yy = HT + (c.w - 1) * ch;
+    hg += c.v === null ? `<rect x="${x + 1}" y="${yy + 1}" width="${cw - 2}" height="${ch - 2}" rx="3" fill="#1d2731"/>` :
+      `<rect class="cell" tabindex="0" data-w="${c.w}" data-h="${c.h}" x="${x + 1}" y="${yy + 1}" width="${cw - 2}" height="${ch - 2}" rx="3" fill="${col(c.v)}"/>`;
+    if (c === peak) hg += `<text x="${x + cw / 2}" y="${yy + ch / 2 + 4}" text-anchor="middle" style="fill:#0b1622;font-weight:700">${Math.round(c.v * 100)}%</text>`;
+  });
+  for (let w = 1; w <= 5; w++) hg += `<text x="${HL - 6}" y="${HT + (w - 1) * ch + ch / 2 + 4}" text-anchor="end">${DN[w]}</text>`;
+  for (let h = 8; h <= 17; h += 1) if (h % 2 === 0) hg += `<text x="${HL + (h - 8) * cw + cw / 2}" y="${HT + 5 * ch + 14}" text-anchor="middle">${String(h).padStart(2, '0')}:00</text>`;
+  // scale
+  const sy = HT + 5 * ch + 30;
+  hg += `<defs><linearGradient id="usRamp">${ramp.map((c, i) => `<stop offset="${i / (ramp.length - 1)}" stop-color="${c}"/>`).join('')}</linearGradient></defs>`;
+  hg += `<rect x="${HL}" y="${sy}" width="160" height="8" rx="2" fill="url(#usRamp)"/><text x="${HL}" y="${sy + 20}">0%</text><text x="${HL + 160}" y="${sy + 20}" text-anchor="end">100% in use</text>`;
+  $('usHeat').setAttribute('viewBox', `0 0 470 ${sy + 26}`);
+  $('usHeat').innerHTML = hg;
+  $('usHeat').querySelectorAll('.cell').forEach(el => {
+    const c = cells.find(x => x.w === +el.dataset.w && x.h === +el.dataset.h);
+    const html = `<b>${Math.round(c.v * 100)}% in use</b><div class="r">${DN[c.w]} ${String(c.h).padStart(2, '0')}:00–${String(c.h + 1).padStart(2, '0')}:00 · average of ${c.n} ${DN[c.w]}s</div>`;
+    el.addEventListener('pointermove', ev => showTip(ev, html)); el.addEventListener('focus', ev => showTip(ev, html));
+    el.addEventListener('pointerleave', hideTip); el.addEventListener('blur', hideTip);
+  });
+  const fri = cells.filter(c => c.w === 5 && c.h >= 14 && c.v !== null), friAvg = fri.length ? fri.reduce((a, c) => a + c.v, 0) / fri.length : 0;
+  $('usInsight').innerHTML = `Busiest slot: <b>${DN[peak.w]} ${String(peak.h).padStart(2, '0')}:00 (${Math.round(peak.v * 100)}%)</b>. Quietest: ${DN[low.w]} ${String(low.h).padStart(2, '0')}:00 (${Math.round(low.v * 100)}%). Friday afternoons average ${Math.round(friAvg * 100)}%. With ${ghost} no-show bookings, releasing a room after 10 minutes with nobody present would free about ${ghost} hours.`;
+}
+$('usPeriod').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; usDays = +b.dataset.d; $('usPeriod').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderUsage(); });
+$('usTableBtn').addEventListener('click', () => { const t = $('usTable'), on = t.hidden; t.hidden = !on; $('usTableBtn').setAttribute('aria-pressed', on); $('usTableBtn').textContent = on ? 'Hide table' : 'Show table'; });
+
 /* ================= tools ================= */
 $('wallBtn').addEventListener('click', moveWall);
 function tog(id, fn) { $(id).addEventListener('click', () => { const v = $(id).getAttribute('aria-pressed') !== 'true'; $(id).setAttribute('aria-pressed', v); fn(v); renderAll(); }); }
@@ -1327,6 +1503,7 @@ function renderClock() {
 }
 function renderAll() { renderPlan(); renderStatus(); ROOMS.forEach(renderTp); ROOMS.forEach(renderScreen); renderRouting(); renderCams(); renderHealth(); renderGuest(); renderBookings(); renderClock(); }
 buildPlan(); buildAudio(); renderFilters();
+renderUsage();
 renderPresets(); $('cfgText').value = JSON.stringify(CFG, null, 2); saveVersion('initial (preset "Standard")', 0);
 log('PROC', 'Program start: Lakeview divisible room, 4-Series processor');
 log('SENSOR', 'Wall sensor: CLOSED', 'I/O 1 contact closed');

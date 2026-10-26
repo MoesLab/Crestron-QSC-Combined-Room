@@ -1,6 +1,6 @@
 # Crestron + Q-SYS Combined Room — live demo
 
-**[Open the demo](https://moeslab.github.io/Crestron-QSC-Combined-Room/)**
+**[Open the demo](https://moeslab.github.io/Crestron-QSC-Combined-Room/)** · **[Room help page](https://moeslab.github.io/Crestron-QSC-Combined-Room/help.html)**
 
 Lakeview Room A and Room B: two Microsoft Teams rooms split by an airwall, run by one Crestron 4-Series processor and a Q-SYS Core. They work alone or combine into one large room. The page is an operations dashboard that runs beside the touch panels and shows what the system is doing.
 
@@ -18,8 +18,9 @@ Lakeview Room A and Room B: two Microsoft Teams rooms split by an airwall, run b
 - **Room probe** — one button checks pings, Q-SYS link, panels, displays, video routes, speaker zones with pink noise, microphones, echo canceller, cameras and the airwall sensor, then reports pass, warning or fail. Use the fault buttons to see it catch problems.
 
 - **Room configuration** — the processor's JSON config in an editor with four presets (Standard, Event hall, Sensor bypass, Maintenance), validation with clear errors, a review of every change before applying, saved versions and one-click rollback. Settings take effect immediately: wall sensor mode and override, auto-divide, room names, volume limits, camera defaults, auto-off when vacant, guest QR.
-- **Guest access** — a QR code per room, also on each LED wall's welcome screen, opening phone control (volume, mic mute, share, report a problem). The token changes after every meeting.
+- **Guest access** — a QR code per room, also on each LED wall's welcome screen, opening the room's [help page](https://moeslab.github.io/Crestron-QSC-Combined-Room/help.html): five steps to run a meeting, combining the rooms, troubleshooting, and a problem report that also starts the room probe.
 - **Bookings** — today's timeline for both rooms, including a combined booking, with the next meeting on the welcome screens.
+- **Usage patterns** — 7, 30 or 90 days: utilization, meeting hours, combined-mode share and no-show bookings; meeting hours by room mode; a weekday × hour heatmap of when the rooms are busy; a table view. (Sample data.)
 
 ## Try this
 
