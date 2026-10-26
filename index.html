@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lakeview Divisible Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: operations console — live floor plan across the top, the two room touch panels side by side, the two LED walls, then test tools and the event log. Single dark theme by design. */
+:root {
+  --bg: #0c1116;
+  --surface: #131a21;
+  --surface-2: #19222b;
+  --line: #243140;
+  --fg: #e2eaf1;
+  --muted: #8a99a8;
+  --accent: #3cc7d4;      /* combined / system */
+  --accent-ink: #04161a;
+  --room-a: #5aa7ff;
+  --room-b: #b391ff;
+  --ok: #4fd18b;
+  --warn: #f1c24c;
+  --bad: #ff6f6b;
+  --font-display: "Saira Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14.5px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 32px;
+}
+.wrap { max-width: 1480px; margin: 0 auto; display: grid; gap: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+.top h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; margin: 0; line-height: 1.05; letter-spacing: .01em; text-wrap: balance; }
+.byline { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .06em; color: var(--accent); margin-top: 2px; }
+.top p { margin: 4px 0 0; color: var(--muted); max-width: 76ch; }
+.hdr-right { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.modebadge { font-family: var(--font-display); font-weight: 700; letter-spacing: .12em; font-size: 15px; padding: 6px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); }
+.modebadge.comb { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 30%, transparent); }
+.clock { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.clock .t { font-size: 22px; font-weight: 600; }
+.clock .d { color: var(--muted); font-size: 12.5px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.card-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.card-h h2 { margin: 0; font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.card-b { padding: 14px; }
+.hint { color: var(--muted); font-size: 12.5px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.chip.ok i { background: var(--ok); } .chip.warn i { background: var(--warn); } .chip.bad i { background: var(--bad); } .chip.acc i { background: var(--accent); }
+
+/* plan + status */
+.row1 { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1050px) { .row1 { grid-template-columns: minmax(0, 1fr); } }
+.plan-wrap { padding: 8px 12px 12px; overflow-x: auto; }
+svg.plan { width: 100%; min-width: 560px; display: block; }
+.plan text { font-family: var(--font-body); }
+.plan .rlabel { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .08em; }
+.plan .small { font-size: 11px; fill: var(--muted); }
+.plan .mono { font-family: var(--font-mono); font-size: 10.5px; }
+.plan .panel { transition: transform 1.6s cubic-bezier(.6,.05,.25,1), fill .4s; transform-box: fill-box; }
+.plan .floor { transition: fill .5s; }
+.plan .cone { transition: opacity .4s; }
+.plan .led { transition: fill .4s; }
+.plan .person { transition: opacity .4s; }
+.plan .tp { cursor: pointer; }
+.status-grid { display: grid; gap: 12px; }
+.plegend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+.plegend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 2px solid; vertical-align: -2px; margin-right: 6px; }
+.rs { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; background: var(--surface-2); }
+.rs h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 16px; letter-spacing: .08em; display: flex; justify-content: space-between; align-items: center; }
+.rs h3 .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 8px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.wall-state { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* touch panels */
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
+.tp-frame { background: #08090a; border-radius: 14px; padding: 2.4% 2.4% 3.4%; position: relative; box-shadow: 0 10px 24px rgba(0,0,0,.35); }
+.tp-frame::after { content: attr(data-label); position: absolute; left: 0; right: 0; bottom: .8%; text-align: center; color: #6c7680; font-family: var(--font-display); letter-spacing: .2em; font-size: clamp(8px, .9vw, 11px); }
+.glass { container-type: inline-size; aspect-ratio: 1280 / 800; width: 100%; position: relative; overflow: hidden; border-radius: 3px; background: radial-gradient(ellipse at 20% 0%, #1d2a38 0%, #0d131a 60%); }
+.tp { position: absolute; inset: 0; font-size: calc(100cqw / 80); color: #e9f0f6; display: grid; grid-template-rows: 4.4em 1fr 6em; user-select: none; }
+/* inside .tp: 1em = 16 px of the 1280 x 800 panel */
+.tp-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2em; border-bottom: .08em solid rgba(255,255,255,.08); }
+.tp-head .nm { font-family: var(--font-display); font-weight: 700; font-size: 2.1em; letter-spacing: .04em; }
+.tp-head .nm span { color: var(--tpc); }
+.tp-head .rt { display: flex; gap: .8em; align-items: center; font-size: 1.3em; }
+.tchip { padding: .25em .7em; border-radius: 1em; background: rgba(255,255,255,.08); font-weight: 600; font-size: .9em; }
+.tchip.call { background: #1f9d5a; }
+.tchip.comb { background: var(--accent); color: #04161a; }
+.tp-body { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2em; padding: 1.6em 2em; }
+.tile { border: 0; border-radius: 1em; background: rgba(255,255,255,.06); display: grid; align-content: space-between; justify-items: start; padding: 1.3em; text-align: left; position: relative; overflow: hidden; }
+.tile:hover { background: rgba(255,255,255,.1); }
+.tile:disabled { opacity: .35; cursor: not-allowed; }
+.tile .ic { width: 3.6em; height: 3.6em; }
+.tile .tt { font-size: 1.7em; font-weight: 700; line-height: 1.15; }
+.tile .st { font-size: 1.2em; color: #a9b7c4; margin-top: .3em; }
+.tile.on { background: color-mix(in srgb, var(--tpc) 30%, rgba(255,255,255,.04)); box-shadow: inset 0 0 0 .14em var(--tpc); }
+.tile.call.on { background: rgba(31,157,90,.35); box-shadow: inset 0 0 0 .14em #2fd27b; }
+.tile.comb.on { background: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: inset 0 0 0 .14em var(--accent); }
+.tp-foot { display: flex; align-items: center; gap: 1.2em; padding: 0 2em; border-top: .08em solid rgba(255,255,255,.08); }
+.vbtn { width: 4.2em; height: 4.2em; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); font-size: 1em; display: grid; place-items: center; }
+.vbtn svg { width: 55%; height: 55%; }
+.vbar { flex: 1; height: 1.1em; background: rgba(255,255,255,.1); border-radius: 1em; overflow: hidden; }
+.vbar i { display: block; height: 100%; background: var(--tpc); transition: width .2s; }
+.vnum { font-family: var(--font-mono); font-size: 1.5em; width: 3em; text-align: right; }
+.mute { width: auto; padding: 0 1.4em; border-radius: 2.2em; height: 4.2em; display: flex; gap: .6em; align-items: center; font-size: 1em; }
+.mute span { font-size: 1.35em; font-weight: 700; }
+.mute[aria-pressed="true"] { background: #d1342f; }
+.tp-over { position: absolute; inset: 0; background: rgba(5,8,12,.72); display: grid; place-items: center; }
+.dlg { width: 44em; background: #172230; border-radius: 1.2em; padding: 2.2em; display: grid; gap: 1.2em; box-shadow: 0 1em 3em rgba(0,0,0,.5); }
+.dlg h4 { margin: 0; font-size: 2.2em; font-family: var(--font-display); letter-spacing: .03em; }
+.dlg p { margin: 0; font-size: 1.45em; color: #c3cfda; line-height: 1.4; }
+.dlg .acts { display: flex; gap: 1em; justify-content: flex-end; }
+.dlg button { border: 0; border-radius: .6em; padding: .8em 1.6em; font-size: 1.4em; font-weight: 700; background: rgba(255,255,255,.1); }
+.dlg button.pri { background: var(--accent); color: #04161a; }
+.tp-dim { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; background: rgba(8,12,16,.86); }
+.tp-dim b { display: block; font-family: var(--font-display); font-size: 3em; letter-spacing: .05em; }
+.tp-dim span { font-size: 1.5em; color: #a9b7c4; }
+
+/* displays */
+.row3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .row3 { grid-template-columns: minmax(0, 1fr); } }
+.ledwall { aspect-ratio: 16 / 9; background: #000; border-radius: 4px; overflow: hidden; position: relative; container-type: inline-size; max-width: 100%; border: 6px solid #050607; }
+.scr { position: absolute; inset: 0; font-size: calc(100cqw / 60); }
+.scr.off { background: #000; display: grid; place-items: center; color: #222; font-family: var(--font-mono); }
+.scr.idle { background: linear-gradient(135deg, #0f2236, #0a1622 60%, #12263a); display: grid; place-content: center; text-align: center; gap: .4em; }
+.scr.idle .big { font-family: var(--font-display); font-size: 3.6em; font-weight: 700; letter-spacing: .05em; }
+.scr.idle .sub { font-size: 1.3em; color: #9fb3c6; }
+.scr.idle .tm { font-family: var(--font-mono); font-size: 2.4em; color: #dfe9f2; }
+.scr.meet { background: #1b1d23; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; gap: .4em; padding: .6em .6em 3.2em; }
+.scr.meet.share { grid-template-columns: 2.4fr 1fr; grid-template-rows: repeat(3, 1fr); }
+.tilev { background: #2b2f38; border-radius: .3em; display: grid; place-items: center; position: relative; }
+.tilev .av { width: 3.2em; height: 3.2em; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 1.1em; }
+.tilev .nm { position: absolute; left: .4em; bottom: .3em; font-size: .85em; color: #d7dde6; background: rgba(0,0,0,.4); padding: 0 .4em; border-radius: .2em; }
+.tilev.spk { box-shadow: inset 0 0 0 .18em #8b8cf5; }
+.tilev.content { grid-row: 1 / span 3; background: #f4f5f7; color: #222; display: grid; align-content: start; justify-items: start; padding: 1em; gap: .5em; }
+.content h5 { margin: 0; font-size: 1.6em; }
+.content .bars { display: flex; gap: .5em; align-items: flex-end; height: 7em; margin-top: .6em; }
+.content .bars i { width: 2.2em; background: #3f7dd6; display: block; }
+.scr .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2.6em; background: #111318; display: flex; align-items: center; justify-content: center; gap: 1em; font-size: .9em; color: #c9d0da; }
+.scr .bar b { background: #c4314b; color: #fff; padding: .2em .8em; border-radius: .3em; font-weight: 600; }
+.scr.laptop { background: #f4f5f7; color: #1d2430; padding: 2em 2.4em; display: grid; align-content: start; gap: .6em; }
+.scr.laptop h5 { margin: 0; font-size: 2.2em; }
+.scr.laptop p { margin: 0; font-size: 1.2em; color: #4a5566; }
+.disp-cap { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+
+/* bench */
+.row4 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .row4 { grid-template-columns: minmax(0, 1fr); } }
+.tools { display: grid; gap: 16px; }
+.tool h3 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); padding: 6px 12px; border-radius: 5px; font-weight: 600; font-size: 13.5px; }
+.btn:hover { border-color: var(--accent); }
+.btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.log { background: #070a0d; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; height: 420px; overflow: auto; padding: 10px 12px; border-radius: 0 0 8px 8px; }
+.log div { white-space: pre-wrap; word-break: break-word; }
+.log .ts { color: #5f7080; }
+.log .tag { display: inline-block; min-width: 7em; font-weight: 600; }
+.tag.PROC { color: #d9e2ea; } .tag.TP-A { color: var(--room-a); } .tag.TP-B { color: var(--room-b); } .tag.QSYS { color: #5fdc8f; }
+.tag.NVX { color: #f0a8d8; } .tag.DISPLAY { color: #ffd479; } .tag.UC { color: #8fb8ff; } .tag.SENSOR { color: var(--accent); } .tag.WARN { color: var(--bad); }
+.log .tx { color: #aab8c6; }
+footer { color: var(--muted); font-size: 13px; text-align: center; }
+/* video routing */
+.vr-wrap { overflow-x: auto; padding: 6px 12px 12px; }
+svg.vr { width: 100%; min-width: 760px; display: block; }
+.vr text { font-family: var(--font-body); }
+.vr .nb { fill: var(--surface-2); stroke: var(--line); stroke-width: 1.5; }
+.vr .nt { font-size: 13px; font-weight: 700; fill: var(--fg); }
+.vr .ns { font-size: 11px; fill: var(--muted); font-family: var(--font-mono); }
+.vr .wire { fill: none; stroke: #2a3644; stroke-width: 2; }
+.vr .flow { fill: none; stroke-width: 3.5; stroke-dasharray: 10 8; animation: flow 1s linear infinite; }
+.vr .sw { fill: #0f1a22; stroke: var(--accent); stroke-width: 1.5; }
+@keyframes flow { to { stroke-dashoffset: -18; } }
+.vr-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); padding: 0 14px 12px; }
+.vr-legend i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: 3px; margin-right: 6px; }
+/* audio */
+.au { display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr); gap: 14px; align-items: stretch; }
+@media (max-width: 1000px) { .au { grid-template-columns: minmax(0, 1fr); } }
+.aroom { border: 1px solid var(--line); border-radius: 6px; padding: 12px; background: var(--surface-2); display: grid; gap: 10px; min-width: 0; }
+.aroom h3 { margin: 0; font-family: var(--font-display); font-size: 16px; letter-spacing: .08em; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.achain { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ablk { border: 1px solid var(--line); border-radius: 5px; padding: 8px; background: var(--surface); display: grid; gap: 6px; align-content: start; min-width: 0; }
+.ablk b { font-size: 12px; letter-spacing: .04em; }
+.ablk span { font-size: 11.5px; color: var(--muted); }
+.ablk .val { font-family: var(--font-mono); font-size: 12px; color: var(--fg); }
+.meters { display: flex; gap: 4px; align-items: flex-end; height: 70px; }
+.mtr { flex: 1; max-width: 16px; height: 100%; background: #1d2731; border-radius: 2px; position: relative; overflow: hidden; }
+.mtr i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(0deg, #2fa866 0%, #7bd14f 60%, #e3c13c 85%, #e0533c 100%); transition: height .1s linear; }
+.mtr.gate::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: #4fd18b; }
+.mtr.mute i { background: #4a2a2c; }
+.comb-col { border: 1px dashed var(--line); border-radius: 6px; display: grid; place-content: center; text-align: center; gap: 8px; padding: 12px; }
+.comb-col.on { border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.comb-col b { font-family: var(--font-display); letter-spacing: .1em; font-size: 15px; }
+.comb-col span { font-size: 12px; color: var(--muted); }
+.comb-col .link { height: 4px; border-radius: 2px; background: var(--line); }
+.comb-col.on .link { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+/* inspector */
+.insp-h { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fchip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 600; }
+.fchip[aria-pressed="false"] { opacity: .45; }
+.fchip small { color: var(--muted); font-weight: 500; margin-left: 4px; font-family: var(--font-mono); }
+.log .ent { cursor: pointer; padding: 1px 0; border-bottom: 1px solid #10161c; }
+.log .ent:hover { background: #0e151c; }
+.log .dir { display: inline-block; width: 1.4em; color: #6f8091; }
+.log .dir.out { color: #8fd3ff; } .log .dir.in { color: #ffd58f; }
+.log .pl { display: block; color: #7f91a3; padding-left: 9.4em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log .ent.open .pl { white-space: pre-wrap; overflow: visible; color: #b9c8d6; }
+.tag.IO { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .vr .flow { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .plan .panel { transition-duration: .01s; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Lakeview Divisible Room</h1>
+      <div class="byline">Moe Azizi · Crestron + Q-SYS</div>
+      <p>Two Teams rooms split by an airwall. Each side has its own UC engine, LED wall, camera, laptop input and Crestron touch panel; one 4-Series processor and a Q-SYS Core run them alone or as one large room.</p>
+    </div>
+    <div class="hdr-right">
+      <span class="modebadge" id="modeBadge">DIVIDED</span>
+      <div class="clock"><div class="t" id="clkT">--:--:--</div><div class="d" id="clkD"></div></div>
+    </div>
+  </header>
+
+  <section class="row1">
+    <div class="card">
+      <div class="card-h"><h2>Floor plan · live</h2><span class="hint">Click a touch panel on the plan to bring it into view</span></div>
+      <div class="plan-wrap"><svg class="plan" id="plan" viewBox="0 0 900 534" role="img" aria-label="Floor plan of Lakeview Room A and Room B with the airwall between them"></svg>
+        <div class="plegend"><span><i style="background:#141a20;border-color:#2a3542"></i>Off</span><span><i style="background:#13243a;border-color:#5aa7ff"></i>Room A on</span><span><i style="background:#221b38;border-color:#b391ff"></i>Room B on</span><span><i style="background:#11301f;border-color:#4fd18b"></i>In meeting</span><span><i style="background:#0f2d33;border-color:#3cc7d4"></i>Combined</span><span><i style="background:#f1c24c;border-color:#f1c24c"></i>Sensor: moving</span></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Room status</h2></div>
+      <div class="card-b status-grid">
+        <div class="rs">
+          <div class="wall-state"><h3 style="margin:0">Airwall</h3><span class="chip" id="wallChip"><i></i>Closed</span></div>
+          <dl class="kv" style="margin-top:8px"><dt>Sensor (contact closure, I/O 1)</dt><dd id="sensorTxt">Closed</dd><dt>Combine allowed</dt><dd id="allowTxt">No</dd></dl>
+        </div>
+        <div class="rs" id="rsA"></div>
+        <div class="rs" id="rsB"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="row2">
+    <div class="card"><div class="card-h"><h2>Touch panel · Room A</h2><span class="hint">TS-1070 · IP-ID 03</span></div>
+      <div class="card-b"><div class="tp-frame" data-label="LAKEVIEW A · ROOM CONTROL"><div class="glass"><div class="tp" id="tpA" style="--tpc: var(--room-a)"></div></div></div></div></div>
+    <div class="card"><div class="card-h"><h2>Touch panel · Room B</h2><span class="hint">TS-1070 · IP-ID 04</span></div>
+      <div class="card-b"><div class="tp-frame" data-label="LAKEVIEW B · ROOM CONTROL"><div class="glass"><div class="tp" id="tpB" style="--tpc: var(--room-b)"></div></div></div></div></div>
+  </section>
+
+  <section class="row3">
+    <div class="card"><div class="card-h"><h2>LED wall · Room A</h2><span class="chip" id="dcA"><i></i>Off</span></div>
+      <div class="card-b"><div class="ledwall"><div id="scrA"></div></div><div class="disp-cap" id="capA"></div></div></div>
+    <div class="card"><div class="card-h"><h2>LED wall · Room B</h2><span class="chip" id="dcB"><i></i>Off</span></div>
+      <div class="card-b"><div class="ledwall"><div id="scrB"></div></div><div class="disp-cap" id="capB"></div></div></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Video routing · DM NVX</h2><span class="hint">Multicast over the AV network switch. Moving lines are streams a decoder is subscribed to right now.</span></div>
+    <div class="vr-wrap"><svg class="vr" id="vr" viewBox="0 0 1000 330" role="img" aria-label="Video routing from laptops and UC engines through NVX encoders and the network switch to decoders, LED walls and UC engine content inputs"></svg></div>
+    <div class="vr-legend"><span><i style="background:#9cc8ff"></i>Laptop A stream</span><span><i style="background:#5aa7ff"></i>UC engine A stream</span><span><i style="background:#d6c6ff"></i>Laptop B stream</span><span><i style="background:#b391ff"></i>UC engine B stream</span></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Audio · Q-SYS Core</h2><span class="hint">Ceiling mic lobes → AEC → USB bridge to each UC engine; far end → speaker zones. The Room Combiner joins both rooms when the airwall opens.</span></div>
+    <div class="card-b au" id="au"></div>
+  </section>
+
+  <section class="row4">
+    <div class="card">
+      <div class="card-h"><h2>Test tools</h2><span class="hint">Stand in for people and hardware</span></div>
+      <div class="card-b tools">
+        <div class="tool"><h3>Airwall</h3>
+          <div class="row"><button class="btn" id="wallBtn">Open the airwall</button><span class="hint" id="wallHint">Panels take a few seconds to move; the sensor reports when they stop.</span></div></div>
+        <div class="tool"><h3>People</h3>
+          <div class="row"><button class="btn" id="occA" aria-pressed="true">People in Room A</button><button class="btn" id="occB" aria-pressed="false">People in Room B</button></div></div>
+        <div class="tool"><h3>Laptops (HDMI at the table)</h3>
+          <div class="row"><button class="btn" id="lapA" aria-pressed="true">Laptop plugged in, Room A</button><button class="btn" id="lapB" aria-pressed="false">Laptop plugged in, Room B</button></div></div>
+        <div class="tool"><h3>Coming next</h3>
+          <p class="hint" style="margin:0">Step 3: cameras, device health, room probe. Step 4: config editor with presets and wall sensor override, QR code, bookings. Tip: click any line in the message inspector to see its full payload.</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Message inspector</h2>
+        <div class="insp-h" id="insFilters"></div>
+        <div class="row"><button class="btn" id="insPause" aria-pressed="false">Pause</button><button class="btn" id="insClear">Clear</button></div></div>
+      <div class="log" id="log" aria-live="polite"></div>
+    </div>
+  </section>
+  <footer>Moe Azizi · Lakeview divisible room concept · Crestron 4-Series, Crestron Flex UC engines, Q-SYS, DM NVX</footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ================= model ================= */
+const ROOMS = ['A', 'B'];
+const S = {
+  now: Date.now(),
+  wall: 'closed',         // closed | opening | open | closing  (physical panels)
+  sensor: 'closed',       // what the contact closure reports
+  mode: 'divided',        // divided | combined
+  r: {
+    A: { power: true, src: 'idle', call: false, vol: 55, mute: false, occ: true, laptop: true, callStart: 0 },
+    B: { power: false, src: 'idle', call: false, vol: 50, mute: false, occ: false, laptop: false, callStart: 0 }
+  },
+  ui: { A: { dlg: null }, B: { dlg: null } },
+  prompted: false
+};
+const COLOR = { A: 'var(--room-a)', B: 'var(--room-b)' };
+/* in combined mode Room A is the master: its UC engine, audio and controls drive both sides */
+const master = room => S.mode === 'combined' ? 'A' : room;
+const R = room => S.r[master(room)];
+const isCombined = () => S.mode === 'combined';
+
+/* ================= message inspector ================= */
+const logEl = $('log');
+const hhmmss = t => { const d = new Date(t); return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':'); };
+/* channel → label, direction from the processor's point of view */
+const CH = {
+  'TP-A': ['Touch panels', 'in'], 'TP-B': ['Touch panels', 'in'], SENSOR: ['I/O + sensors', 'in'], IO: ['I/O + sensors', 'in'],
+  NVX: ['DM NVX', 'out'], QSYS: ['Q-SYS', 'out'], DISPLAY: ['Displays', 'out'], UC: ['UC engines', 'out'], PROC: ['Program', ''], WARN: ['Program', '']
+};
+const GROUPS = ['Touch panels', 'I/O + sensors', 'DM NVX', 'Q-SYS', 'Displays', 'UC engines', 'Program'];
+const INS = { list: [], on: Object.fromEntries(GROUPS.map(g => [g, true])), paused: false, count: Object.fromEntries(GROUPS.map(g => [g, 0])) };
+const RESP = { NVX: '← 200 OK', QSYS: '← {"jsonrpc":"2.0","id":%ID%,"result":true}', DISPLAY: '← ack' };
+let rpcId = 100;
+function log(tag, msg, tx, dirOverride) {
+  const [grp, dir0] = CH[tag] || ['Program', ''];
+  const dir = dirOverride || dir0;
+  let payload = tx || '';
+  if (tag === 'QSYS' && payload.startsWith('{"jsonrpc"')) payload = payload.replace('"method"', `"id":${++rpcId},"method"`);
+  addEntry({ t: Date.now(), tag, grp, dir, msg, payload });
+  if (RESP[tag] && tx && dir === 'out') {
+    const r = tag === 'DISPLAY' ? (tx.includes('ON') ? '← "PWR=ON\\r"' : '← "PWR=OFF\\r"') : RESP[tag].replace('%ID%', rpcId);
+    setTimeout(() => addEntry({ t: Date.now(), tag, grp, dir: 'in', msg: 'reply ' + r.replace(/^← /, ''), payload: '' }), 60 + Math.random() * 120);
+  }
+}
+function addEntry(e) {
+  INS.list.unshift(e); if (INS.list.length > 400) INS.list.pop();
+  INS.count[e.grp]++;
+  renderFilters();
+  if (INS.paused || !INS.on[e.grp]) return;
+  logEl.prepend(entryEl(e));
+  while (logEl.childNodes.length > 300) logEl.lastChild.remove();
+}
+function pretty(p) {
+  const i = p.indexOf('{');
+  if (i < 0) return p;
+  try { return p.slice(0, i) + JSON.stringify(JSON.parse(p.slice(i)), null, 2); } catch (_) { return p; }
+}
+function entryEl(e) {
+  const div = document.createElement('div'); div.className = 'ent';
+  div.innerHTML = `<span class="ts">${hhmmss(e.t)}</span> <span class="dir ${e.dir}">${e.dir === 'out' ? '→' : e.dir === 'in' ? '←' : '·'}</span><span class="tag ${e.tag}">${e.tag}</span> `;
+  div.appendChild(document.createTextNode(e.msg));
+  if (e.payload) { const pl = document.createElement('span'); pl.className = 'pl'; pl.textContent = e.payload; pl.dataset.full = pretty(e.payload); div.appendChild(pl); }
+  div.addEventListener('click', () => { div.classList.toggle('open'); const pl = div.querySelector('.pl'); if (pl) pl.textContent = div.classList.contains('open') ? pl.dataset.full : e.payload; });
+  return div;
+}
+function redrawLog() { logEl.innerHTML = ''; INS.list.slice(0, 300).filter(e => INS.on[e.grp]).reverse().forEach(e => logEl.prepend(entryEl(e))); }
+function renderFilters() {
+  const f = $('insFilters');
+  if (!f.childElementCount) {
+    f.innerHTML = GROUPS.map(g => `<button class="fchip" data-g="${g}" aria-pressed="true">${g}<small id="cnt-${g.replace(/\W/g, '')}">0</small></button>`).join('');
+    f.addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; const g = b.dataset.g; INS.on[g] = !INS.on[g]; b.setAttribute('aria-pressed', INS.on[g]); redrawLog(); });
+  }
+  GROUPS.forEach(g => { const c = $('cnt-' + g.replace(/\W/g, '')); if (c) c.textContent = INS.count[g]; });
+}
+$('insPause').addEventListener('click', () => { INS.paused = !INS.paused; $('insPause').setAttribute('aria-pressed', INS.paused); $('insPause').textContent = INS.paused ? 'Resume' : 'Pause'; if (!INS.paused) redrawLog(); });
+$('insClear').addEventListener('click', () => { INS.list = []; GROUPS.forEach(g => INS.count[g] = 0); logEl.innerHTML = ''; renderFilters(); });
+
+/* ================= device commands (what the processor sends) ================= */
+function displayPower(room, on) {
+  log('DISPLAY', `LED wall ${room} power ${on ? 'on' : 'off'}`, `RS-232 → "PWR ${on ? 'ON' : 'OFF'}\\r"`);
+}
+function routeDisplay(room) {
+  const r = R(room);
+  let stream, what;
+  if (r.src === 'laptop' && !r.call) { const lr = r.lapRoom || master(room); stream = `NVX-ENC-TBL-${lr}`; what = `laptop on table ${lr}`; }
+  else { stream = `NVX-ENC-UC-${master(room)}`; what = `UC engine ${master(room)}`; }
+  const ip = stream.includes('TBL') ? (stream.endsWith('A') ? '239.8.0.21' : '239.8.0.22') : (stream.endsWith('A') ? '239.8.0.11' : '239.8.0.12');
+  log('NVX', `NVX-DEC-${room} → ${what}`, `PUT /Device/StreamReceive {"ServerUrl":"rtsp://${ip}"}`);
+}
+function qsysCombine(on) {
+  log('QSYS', `Room Combiner wall 1 ${on ? 'open: A+B one room' : 'closed: A and B separate'}`,
+    `{"jsonrpc":"2.0","method":"Component.Set","params":{"Name":"Lakeview-Combiner","Controls":[{"Name":"wall.1.open","Value":${on ? 1 : 0}}]}}`);
+}
+function qsysVol(room) {
+  const r = R(room);
+  const db = Math.round(-60 + r.vol * 0.6);
+  log('QSYS', `${isCombined() ? 'Combined' : 'Room ' + room} program level ${db} dB`, `Control.Set "Gain-${isCombined() ? 'AB' : room}" ${db}`);
+}
+function qsysMute(room) {
+  const r = R(room);
+  log('QSYS', `${isCombined() ? 'All' : 'Room ' + room} microphones ${r.mute ? 'muted' : 'live'}`, `Control.Set "MicMute-${isCombined() ? 'AB' : room}" ${r.mute ? 1 : 0}`);
+}
+
+/* ================= room actions ================= */
+function setPower(room, on) {
+  const targets = isCombined() ? ROOMS : [room];
+  const r = R(room);
+  r.power = on;
+  if (!on) { if (r.call) endCall(room, true); r.src = 'idle'; }
+  targets.forEach(t => displayPower(t, on));
+  if (on) targets.forEach(routeDisplay);
+}
+function startCall(room) {
+  const r = R(room); const m = master(room);
+  if (!r.power) setPower(room, true);
+  r.call = true; r.callStart = Date.now();
+  log('UC', `UC engine ${m}: meeting started from Room ${room}'s panel`);
+  (isCombined() ? ROOMS : [room]).forEach(routeDisplay);
+}
+function endCall(room, quiet) {
+  const r = R(room); const m = master(room);
+  r.call = false;
+  log('UC', `UC engine ${m}: left the meeting${quiet ? ' (system off)' : ''}`);
+  if (!quiet) (isCombined() ? ROOMS : [room]).forEach(routeDisplay);
+}
+function share(room) {
+  const r = R(room);
+  // the laptop can be on either table when combined; prefer the one in the room whose panel was pressed
+  const lap = S.r[room].laptop ? room : (isCombined() && S.r[other(room)].laptop ? other(room) : null);
+  if (!lap && r.src !== 'laptop') { S.ui[room].dlg = { title: 'No laptop found', body: 'Plug the HDMI cable on the table into your laptop, then try again.', acts: [['OK', null]] }; return; }
+  if (!r.power) setPower(room, true);
+  r.src = r.src === 'laptop' ? 'idle' : 'laptop';
+  if (lap) r.lapRoom = lap;
+  if (r.call) { const ing = `NVX-DEC-ING-${master(room)}`, lr = r.lapRoom || room;
+    log('NVX', `${ing} → ${r.src === 'laptop' ? 'laptop on table ' + lr : 'no stream'}`, r.src === 'laptop' ? `PUT /Device/StreamReceive {"ServerUrl":"rtsp://${ENC['TBL-' + lr].ip}"}` : 'PUT /Device/StreamReceive {"Stop":true}');
+    log('UC', `UC engine ${master(room)}: laptop ${r.src === 'laptop' ? 'shared into the meeting' : 'sharing stopped'} (content input)`); }
+  else (isCombined() ? ROOMS : [room]).forEach(routeDisplay);
+}
+const other = room => room === 'A' ? 'B' : 'A';
+
+function combine(byRoom) {
+  if (S.sensor !== 'open') {
+    S.ui[byRoom].dlg = { title: 'Airwall is closed', body: 'Open the airwall fully before combining the rooms. The wall sensor must report open.', acts: [['OK', null]] };
+    log('PROC', `Combine refused: wall sensor reports ${S.sensor}`); return;
+  }
+  const busy = ROOMS.filter(x => S.r[x].call);
+  if (busy.length) {
+    S.ui[byRoom].dlg = { title: 'A meeting is in progress', body: `Room ${busy.join(' and ')} is in a Teams meeting. Leave the meeting first, then combine.`, acts: [['OK', null]] };
+    log('PROC', `Combine refused: Room ${busy.join(', ')} in a call`); return;
+  }
+  S.mode = 'combined'; S.prompted = false;
+  const A = S.r.A, B = S.r.B;
+  A.power = true; A.src = 'idle'; A.vol = Math.round((A.vol + B.vol) / 2); A.mute = A.mute || B.mute;
+  log('PROC', `Rooms COMBINED from Room ${byRoom}'s panel. Room A is master.`);
+  log('UC', 'UC engine B to standby; UC engine A runs the combined room');
+  qsysCombine(true); qsysVol('A');
+  ROOMS.forEach(t => displayPower(t, true));
+  ROOMS.forEach(routeDisplay);
+  log('TP-B', 'Panel B now mirrors Room A controls');
+}
+function divide(reason) {
+  if (!isCombined()) return;
+  const A = S.r.A;
+  const inCall = A.call;
+  S.mode = 'divided';
+  S.r.B = { ...S.r.B, power: A.power, src: 'idle', call: false, vol: A.vol, mute: A.mute };
+  if (inCall) log('UC', 'UC engine A keeps the meeting; Room B leaves it');
+  log('PROC', `Rooms DIVIDED (${reason})`);
+  qsysCombine(false);
+  log('UC', 'UC engine B wakes from standby');
+  ROOMS.forEach(t => { if (S.r[t].power) routeDisplay(t); });
+}
+
+/* ================= airwall ================= */
+let wallTimer = 0;
+function moveWall() {
+  if (S.wall === 'opening' || S.wall === 'closing') return;
+  const opening = S.wall === 'closed';
+  S.wall = opening ? 'opening' : 'closing';
+  if (!opening) { S.sensor = 'moving'; log('SENSOR', 'Wall sensor: panels moving (not open)'); if (isCombined()) divide('airwall closing'); }
+  else { S.sensor = 'moving'; log('SENSOR', 'Wall sensor: panels moving'); }
+  renderAll();
+  clearTimeout(wallTimer);
+  wallTimer = setTimeout(() => {
+    S.wall = opening ? 'open' : 'closed';
+    S.sensor = S.wall;
+    log('SENSOR', `Wall sensor: ${S.sensor.toUpperCase()}`, `I/O 1 ${opening ? 'contact open' : 'contact closed'}`);
+    if (opening) {
+      S.prompted = true;
+      ROOMS.forEach(t => { if (S.r[t].power || S.r[t].occ) S.ui[t].dlg = { title: 'Airwall opened', body: 'Combine Room A and Room B into one room? Both LED walls, cameras, microphones and speakers will work together.', acts: [['Not now', null], ['Combine rooms', 'combine']] }; });
+      log('PROC', 'Airwall open: asking the occupied rooms whether to combine');
+    } else {
+      ROOMS.forEach(t => { if (S.ui[t].dlg && S.ui[t].dlg.acts.some(a => a[1] === 'combine')) S.ui[t].dlg = null; });
+    }
+    renderAll();
+  }, 3200);
+}
+
+/* ================= floor plan ================= */
+const planEl = $('plan');
+const PANELS = 5;
+function buildPlan() {
+  let g = `<defs>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#1a232d"/><line x1="0" y1="0" x2="0" y2="6" stroke="#2a3644" stroke-width="2"/></pattern>
+    <linearGradient id="coneA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5aa7ff" stop-opacity=".38"/><stop offset="1" stop-color="#5aa7ff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="coneB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b391ff" stop-opacity=".38"/><stop offset="1" stop-color="#b391ff" stop-opacity="0"/></linearGradient>
+  </defs>`;
+  g += '<rect x="10" y="10" width="880" height="500" rx="4" fill="#0f151b" stroke="#3a4a5a" stroke-width="3"/>';
+  [['A', 20], ['B', 470]].forEach(([r, x0]) => {
+    const cx = x0 + 205, col = r === 'A' ? '#5aa7ff' : '#b391ff';
+    g += `<rect class="floor" id="floor-${r}" x="${x0}" y="20" width="410" height="480" fill="#141a20"/>`;
+    g += `<rect id="edge-${r}" x="${x0 + 3}" y="23" width="404" height="474" fill="none" stroke="#2a3542" stroke-width="2" rx="2"/>`;
+    // LED wall on the top wall, label to its right
+    g += `<rect class="led" id="led-${r}" x="${cx - 130}" y="30" width="260" height="14" rx="2" fill="#222"/>`;
+    g += `<text class="small" x="${cx + 140}" y="41">LED wall ${r}</text>`;
+    // camera under the LED wall, looking down the room
+    g += `<path class="cone" id="cone-${r}" d="M${cx} 60 L${cx - 165} 380 L${cx + 165} 380 Z" fill="url(#cone${r})" opacity="0"/>`;
+    g += `<rect x="${cx - 8}" y="49" width="16" height="12" rx="3" fill="#cfd8e1"/><circle cx="${cx}" cy="57" r="3" fill="#0b1015"/>`;
+    g += `<text class="small" x="${cx + 14}" y="59">camera ${r}</text>`;
+    // ceiling speakers in the corners
+    [[x0 + 50, 95], [x0 + 360, 95], [x0 + 50, 395], [x0 + 360, 395]].forEach(([sx, sy]) => g += `<circle cx="${sx}" cy="${sy}" r="8" fill="none" stroke="#56677a"/><circle cx="${sx}" cy="${sy}" r="3" fill="#56677a"/>`);
+    // ceiling mic over the table
+    g += `<circle cx="${cx}" cy="240" r="78" fill="none" stroke="#3cc7d4" stroke-dasharray="3 5" opacity=".5" id="mic-${r}"/>`;
+    // table pointing at the LED wall, chairs both sides
+    g += `<rect x="${cx - 46}" y="140" width="92" height="200" rx="40" fill="#2a3542" stroke="#3b4a5a"/>`;
+    [165, 210, 255, 300].forEach((cy, i) => {
+      [-66, 66].forEach((dx, j) => {
+        g += `<circle cx="${cx + dx}" cy="${cy}" r="9" fill="#202a35" stroke="#36444f"/>`;
+        if ((i + j) % 2 === 0 || i === 1) g += `<circle class="person p-${r}" cx="${cx + dx}" cy="${cy}" r="6" fill="${col}" opacity="0"/>`;
+      });
+    });
+    g += `<g class="tp" data-room="${r}"><rect x="${cx - 20}" y="156" width="40" height="24" rx="3" fill="#0b1015" stroke="${col}" stroke-width="2"/><text class="mono" x="${cx - 9}" y="172" fill="#cfd8e1">TP</text></g>`;
+    g += `<rect x="${cx - 14}" y="306" width="28" height="16" rx="2" fill="#11171d" stroke="#5c6b79"/>`;
+    g += `<text class="mono" x="${cx}" y="358" fill="#8a99a8" text-anchor="middle" id="hdmi-${r}">HDMI</text>`;
+    g += `<text class="small" x="${cx + 84}" y="244">ceiling mic</text>`;
+    // name, state, equipment along the bottom
+    g += `<text class="rlabel" x="${x0 + 16}" y="446" fill="${col}">LAKEVIEW ${r}</text>`;
+    g += `<text class="small" x="${x0 + 16}" y="466" id="plsub-${r}" style="font-size:12.5px;font-weight:600"></text>`;
+    g += `<text class="mono" x="${x0 + 16}" y="487" fill="#6f8091">UC engine ${r} · NVX enc/dec · TS-1070</text>`;
+  });
+  // airwall track and panels
+  g += '<rect x="430" y="20" width="40" height="480" fill="url(#hatch)"/>';
+  for (let i = 0; i < PANELS; i++) {
+    const h = 480 / PANELS;
+    g += `<rect class="panel" id="pn${i}" x="440" y="${20 + i * h}" width="20" height="${h - 2}" rx="2" fill="#7f8e9c"/>`;
+  }
+  g += '<rect x="442" y="516" width="16" height="12" rx="3" fill="#0b1015" stroke="#3cc7d4" id="sensorDot"/><text class="mono" x="464" y="526" fill="#8a99a8">airwall sensor</text>';
+  planEl.innerHTML = g;
+  planEl.querySelectorAll('.tp').forEach(el => el.addEventListener('click', () => {
+    $('tp' + el.dataset.room).closest('.card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }));
+}
+/* room state colours, used on the plan, the legend and the status chips */
+const STATE = {
+  off: { fill: '#141a20', edge: '#2a3542', label: 'Off', text: '#8a99a8' },
+  onA: { fill: '#13243a', edge: '#5aa7ff', label: 'On', text: '#5aa7ff' },
+  onB: { fill: '#221b38', edge: '#b391ff', label: 'On', text: '#b391ff' },
+  meet: { fill: '#11301f', edge: '#4fd18b', label: 'In meeting', text: '#4fd18b' },
+  comb: { fill: '#0f2d33', edge: '#3cc7d4', label: 'Combined', text: '#3cc7d4' }
+};
+function roomState(r) {
+  const rr = R(r);
+  if (!rr.power) return 'off';
+  if (rr.call) return 'meet';
+  if (isCombined()) return 'comb';
+  return r === 'A' ? 'onA' : 'onB';
+}
+function renderPlan() {
+  const open = S.wall === 'open' || S.wall === 'opening';
+  for (let i = 0; i < PANELS; i++) {
+    const h = 480 / PANELS;
+    const p = $('pn' + i);
+    p.style.transform = open ? `translateY(${-(i * h) + i * 5}px) scaleY(.12)` : 'none';
+    p.style.fill = open ? '#4a5866' : '#7f8e9c';
+  }
+  const comb = isCombined();
+  ROOMS.forEach(r => {
+    const rr = R(r), st = STATE[roomState(r)];
+    $('floor-' + r).style.fill = st.fill;
+    $('edge-' + r).style.stroke = st.edge;
+    $('led-' + r).style.fill = !rr.power ? '#222' : rr.call ? '#8b8cf5' : rr.src === 'laptop' ? '#f4f5f7' : '#2b6aa8';
+    $('cone-' + r).style.opacity = rr.call ? 1 : 0;
+    planEl.querySelectorAll('.p-' + r).forEach(p => p.style.opacity = S.r[r].occ ? 1 : 0);
+    $('hdmi-' + r).textContent = S.r[r].laptop ? 'HDMI laptop ●' : 'HDMI';
+    $('hdmi-' + r).style.fill = S.r[r].laptop ? '#4fd18b' : '#8a99a8';
+    $('mic-' + r).style.opacity = rr.mute ? .12 : .5;
+    const sub = $('plsub-' + r);
+    sub.textContent = st.label + (comb ? (r === 'A' ? ' · master' : ' · follows A') : '') + (rr.mute && rr.power ? ' · mics muted' : '');
+    sub.style.fill = st.text;
+  });
+  $('sensorDot').style.fill = S.sensor === 'open' ? '#3cc7d4' : S.sensor === 'moving' ? '#f1c24c' : '#0b1015';
+}
+
+/* ================= status ================= */
+function renderStatus() {
+  const comb = isCombined();
+  const b = $('modeBadge'); b.textContent = comb ? 'COMBINED  A + B' : 'DIVIDED'; b.className = 'modebadge' + (comb ? ' comb' : '');
+  const wc = $('wallChip');
+  const wl = { closed: ['Closed', ''], opening: ['Opening…', 'warn'], open: ['Open', 'acc'], closing: ['Closing…', 'warn'] }[S.wall];
+  wc.className = 'chip ' + wl[1]; wc.innerHTML = `<i></i>${wl[0]}`;
+  $('sensorTxt').textContent = { closed: 'Closed', open: 'Open', moving: 'Moving' }[S.sensor];
+  const allow = S.sensor === 'open' && !ROOMS.some(x => S.r[x].call);
+  $('allowTxt').textContent = comb ? 'Combined' : allow ? 'Yes' : S.sensor !== 'open' ? 'No, wall not open' : 'No, a meeting is running';
+  $('wallBtn').textContent = S.wall === 'closed' ? 'Open the airwall' : S.wall === 'open' ? 'Close the airwall' : S.wall === 'opening' ? 'Opening…' : 'Closing…';
+  ROOMS.forEach(r => {
+    const rr = R(r), src = !rr.power ? 'Off' : rr.call ? (rr.src === 'laptop' ? 'Meeting + laptop share' : 'Teams meeting') : rr.src === 'laptop' ? 'Laptop (HDMI)' : 'Welcome screen';
+    $('rs' + r).innerHTML = `<h3><span><span class="sw" style="background:${COLOR[r]}"></span>Room ${r}</span><span class="chip" style="border-color:${STATE[roomState(r)].edge};color:${STATE[roomState(r)].text}"><i style="background:${STATE[roomState(r)].edge}"></i>${STATE[roomState(r)].label}</span></h3>
+      <dl class="kv"><dt>Mode</dt><dd>${comb ? (r === 'A' ? 'Master of A+B' : 'Follows A') : 'Independent'}</dd>
+      <dt>UC engine ${r}</dt><dd>${comb && r === 'B' ? 'Standby' : rr.call ? 'In meeting ' + mmss(Date.now() - rr.callStart) : 'Ready'}</dd>
+      <dt>LED wall</dt><dd>${src}</dd>
+      <dt>Volume · mics</dt><dd>${rr.vol}% · ${rr.mute ? 'muted' : 'live'}</dd>
+      <dt>Occupancy</dt><dd>${S.r[r].occ ? 'Occupied' : 'Vacant'}</dd></dl>`;
+  });
+}
+const mmss = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+
+/* ================= touch panels ================= */
+const ICON = {
+  meet: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3"><rect x="4" y="12" width="28" height="24" rx="4"/><path d="M32 21l12-7v20l-12-7z"/></svg>',
+  share: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3"><rect x="6" y="8" width="36" height="24" rx="3"/><path d="M2 40h44M24 26V14M18 19l6-6 6 6"/></svg>',
+  power: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.4"><path d="M24 6v18"/><path d="M14 12a15 15 0 1 0 20 0"/></svg>',
+  comb: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3"><rect x="4" y="10" width="17" height="28" rx="2"/><rect x="27" y="10" width="17" height="28" rx="2"/><path d="M24 6v36" stroke-dasharray="3 3"/></svg>',
+  minus: '<svg viewBox="0 0 24 24"><path d="M5 11h14v2H5z" fill="#e9f0f6"/></svg>',
+  plus: '<svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="#e9f0f6"/></svg>',
+  mic: '<svg viewBox="0 0 24 24" width="2em" height="2em"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" fill="#e9f0f6"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" stroke="#e9f0f6" stroke-width="2" fill="none"/></svg>'
+};
+function renderTp(room) {
+  const el = $('tp' + room), rr = R(room), comb = isCombined();
+  const t = new Date(); const tm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  const name = comb ? 'Lakeview <span>A + B</span>' : `Lakeview <span>${room}</span>`;
+  const combOk = S.sensor === 'open';
+  let h = `<div class="tp-head"><div class="nm">${name}</div><div class="rt">${comb ? '<span class="tchip comb">Combined</span>' : ''}${rr.call ? '<span class="tchip call">In meeting</span>' : ''}<span>${tm}</span></div></div>`;
+  h += `<div class="tp-body">
+    <button class="tile call${rr.call ? ' on' : ''}" data-a="meet"><span class="ic">${ICON.meet}</span><span><span class="tt">${rr.call ? 'Leave meeting' : 'Start Teams meeting'}</span><span class="st">${rr.call ? 'Running ' + mmss(Date.now() - rr.callStart) : 'Uses camera, mics and LED wall'}</span></span></button>
+    <button class="tile${rr.src === 'laptop' ? ' on' : ''}" data-a="share"><span class="ic">${ICON.share}</span><span><span class="tt">${rr.src === 'laptop' ? 'Stop sharing' : 'Share laptop'}</span><span class="st">${S.r[room].laptop || (comb && S.r[other(room)].laptop) ? 'HDMI connected' : 'No laptop connected'}</span></span></button>
+    <button class="tile comb${comb ? ' on' : ''}" data-a="comb" ${!comb && !combOk ? '' : ''}><span class="ic">${ICON.comb}</span><span><span class="tt">${comb ? 'Divide rooms' : 'Combine rooms'}</span><span class="st">${comb ? 'Return to two rooms' : combOk ? 'Airwall is open' : 'Airwall is closed'}</span></span></button>
+    <button class="tile${rr.power ? ' on' : ''}" data-a="power"><span class="ic">${ICON.power}</span><span><span class="tt">${rr.power ? 'Turn room off' : 'Turn room on'}</span><span class="st">LED wall${comb ? 's' : ''} ${rr.power ? 'on' : 'off'}</span></span></button>
+  </div>`;
+  h += `<div class="tp-foot"><button class="vbtn" data-a="vdn" aria-label="Volume down">${ICON.minus}</button><div class="vbar"><i style="width:${rr.vol}%"></i></div><button class="vbtn" data-a="vup" aria-label="Volume up">${ICON.plus}</button><span class="vnum">${rr.vol}%</span>
+    <button class="vbtn mute" data-a="mute" aria-pressed="${rr.mute}">${ICON.mic}<span>${rr.mute ? 'Mics muted' : 'Mute mics'}</span></button></div>`;
+  const d = S.ui[room].dlg;
+  if (d) h += `<div class="tp-over"><div class="dlg"><h4>${esc(d.title)}</h4><p>${esc(d.body)}</p><div class="acts">${d.acts.map(([l, a], i) => `<button data-dlg="${i}" class="${i === d.acts.length - 1 && d.acts.length > 1 ? 'pri' : ''}">${esc(l)}</button>`).join('')}</div></div></div>`;
+  el.innerHTML = h;
+}
+function tpClick(room, e) {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const tag = 'TP-' + room;
+  const JOIN = { meet: 21, share: 22, comb: 23, power: 24, vup: 31, vdn: 32, mute: 33 };
+  const NAMES = { meet: R(room).call ? 'Leave meeting' : 'Start Teams meeting', share: 'Share laptop', comb: isCombined() ? 'Divide rooms' : 'Combine rooms', power: R(room).power ? 'Turn room off' : 'Turn room on', vup: 'Volume up', vdn: 'Volume down', mute: 'Mic mute' };
+  if (b.dataset.a && JOIN[b.dataset.a]) log(tag, `Pressed "${NAMES[b.dataset.a]}"`, `digital join ${JOIN[b.dataset.a]} ↑ (IP-ID ${room === 'A' ? '03' : '04'})`);
+  if (b.dataset.dlg !== undefined) log(tag, `Pressed "${S.ui[room].dlg ? S.ui[room].dlg.acts[+b.dataset.dlg][0] : 'dialog'}"`, `digital join ${41 + +b.dataset.dlg} ↑ (IP-ID ${room === 'A' ? '03' : '04'})`);
+  if (b.dataset.dlg !== undefined) {
+    const d = S.ui[room].dlg; const act = d.acts[+b.dataset.dlg][1];
+    S.ui[room].dlg = null;
+    if (act === 'combine') { ROOMS.forEach(t => S.ui[t].dlg = null); combine(room); }
+    if (act === 'divide') { divide(`from Room ${room}'s panel`); }
+    renderAll(); return;
+  }
+  const rr = R(room);
+  switch (b.dataset.a) {
+    case 'meet': rr.call ? endCall(room) : startCall(room); break;
+    case 'share': share(room); break;
+    case 'power': setPower(room, !rr.power); break;
+    case 'comb':
+      if (isCombined()) S.ui[room].dlg = { title: 'Divide the rooms?', body: rr.call ? 'The meeting stays in Room A. Room B leaves it and goes back to its own controls.' : 'Room A and Room B will go back to working on their own.', acts: [['Cancel', null], ['Divide rooms', 'divide']] };
+      else if (S.sensor !== 'open') { combine(room); }
+      else S.ui[room].dlg = { title: 'Combine the rooms?', body: 'Both LED walls, cameras, microphones and speakers will work as one room, controlled from either panel.', acts: [['Cancel', null], ['Combine rooms', 'combine']] };
+      break;
+    case 'vup': rr.vol = Math.min(100, rr.vol + 5); qsysVol(room); break;
+    case 'vdn': rr.vol = Math.max(0, rr.vol - 5); qsysVol(room); break;
+    case 'mute': rr.mute = !rr.mute; qsysMute(room); break;
+  }
+  renderAll();
+}
+$('tpA').addEventListener('click', e => tpClick('A', e));
+$('tpB').addEventListener('click', e => tpClick('B', e));
+
+/* ================= LED walls ================= */
+const PEOPLE = [['Priya N.', '#2f6fae'], ['Daniel K.', '#6b4fa8'], ['Sofia R.', '#a8566b'], ['Marc T.', '#3f8f6a'], ['Aiko M.', '#a8823f']];
+function renderScreen(room) {
+  const rr = R(room), el = $('scr' + room), cap = $('cap' + room), chip = $('dc' + room);
+  const comb = isCombined();
+  let html, label, cls;
+  if (!rr.power) { html = '<div class="scr off">NO SIGNAL</div>'; label = 'Off'; cls = ''; }
+  else if (rr.call) {
+    const sharing = rr.src === 'laptop';
+    const tiles = PEOPLE.slice(0, sharing ? 3 : 5).map(([n, c], i) => `<div class="tilev${i === 0 ? ' spk' : ''}"><span class="av" style="background:${c}">${n.split(' ').map(w => w[0]).join('')}</span><span class="nm">${n}</span></div>`).join('');
+    const room6 = `<div class="tilev"><span class="av" style="background:#334">L${comb ? 'AB' : room}</span><span class="nm">Lakeview ${comb ? 'A+B' : room}</span></div>`;
+    html = `<div class="scr meet${sharing ? ' share' : ''}">${sharing ? '<div class="tilev content"><h5>Q3 Project Review</h5><span>Shared from laptop</span><div class="bars"><i style="height:40%"></i><i style="height:65%"></i><i style="height:52%"></i><i style="height:85%"></i></div></div>' : ''}${tiles}${sharing ? '' : room6}<div class="bar">${mmss(Date.now() - rr.callStart)} · Weekly sync <b>Leave</b></div></div>`;
+    label = sharing ? 'Meeting + content' : 'Meeting'; cls = 'ok';
+  } else if (rr.src === 'laptop') {
+    html = '<div class="scr laptop"><h5>Q3 Project Review</h5><p>Laptop on the table HDMI input</p><p>• Budget on track · • Phase 2 starts 3 Nov · • Risks reviewed</p></div>';
+    label = 'Laptop'; cls = 'acc';
+  } else {
+    const t = new Date();
+    html = `<div class="scr idle"><div class="big">LAKEVIEW ${comb ? 'A + B' : room}</div><div class="tm">${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}</div><div class="sub">Tap Start Teams meeting on the touch panel, or plug in the HDMI cable to share.</div></div>`;
+    label = 'Welcome screen'; cls = 'acc';
+  }
+  el.innerHTML = html;
+  chip.className = 'chip ' + cls; chip.innerHTML = `<i></i>${label}`;
+  const srcEnc = !rr.power ? 'none' : (rr.src === 'laptop' && !rr.call) ? `NVX-ENC-TBL-${rr.lapRoom || master(room)}` : `NVX-ENC-UC-${master(room)}`;
+  cap.innerHTML = `<span>Decoder NVX-DEC-${room} ← ${srcEnc}</span><span>${comb && room === 'B' ? 'Mirrors Room A' : 'Own source'}</span>`;
+}
+
+/* ================= video routing ================= */
+const ENC = {
+  'TBL-A': { ip: '239.8.0.21', col: '#9cc8ff', name: 'NVX-ENC-TBL-A', src: 'Laptop A', y: 30 },
+  'UC-A': { ip: '239.8.0.11', col: '#5aa7ff', name: 'NVX-ENC-UC-A', src: 'UC engine A', y: 105 },
+  'TBL-B': { ip: '239.8.0.22', col: '#d6c6ff', name: 'NVX-ENC-TBL-B', src: 'Laptop B', y: 180 },
+  'UC-B': { ip: '239.8.0.12', col: '#b391ff', name: 'NVX-ENC-UC-B', src: 'UC engine B', y: 255 }
+};
+const DEC = [
+  { id: 'A', name: 'NVX-DEC-A', sink: 'LED wall A', y: 30 },
+  { id: 'ING-A', name: 'NVX-DEC-ING-A', sink: 'UC engine A content in', y: 105 },
+  { id: 'B', name: 'NVX-DEC-B', sink: 'LED wall B', y: 180 },
+  { id: 'ING-B', name: 'NVX-DEC-ING-B', sink: 'UC engine B content in', y: 255 }
+];
+function encLive(k) {
+  if (k === 'TBL-A') return S.r.A.laptop;
+  if (k === 'TBL-B') return S.r.B.laptop;
+  if (k === 'UC-B') return !isCombined();
+  return true;
+}
+function decSrc(id) {
+  if (id === 'A' || id === 'B') {
+    const rr = R(id);
+    if (!rr.power) return null;
+    return (rr.src === 'laptop' && !rr.call) ? 'TBL-' + (rr.lapRoom || master(id)) : 'UC-' + master(id);
+  }
+  const eng = id.slice(-1);
+  if (isCombined() && eng === 'B') return null;
+  const rr = S.r[eng];
+  return rr.call && rr.src === 'laptop' ? 'TBL-' + (rr.lapRoom || eng) : null;
+}
+function renderRouting() {
+  const H = 50, x1 = 20, x2 = 210, xs = 440, xs2 = 560, x3 = 610, x4 = 820;
+  let g = '';
+  Object.entries(ENC).forEach(([k, e]) => {
+    const live = encLive(k);
+    g += `<rect class="nb" x="${x1}" y="${e.y}" width="150" height="${H}" rx="6"/><text class="nt" x="${x1 + 12}" y="${e.y + 21}">${e.src}</text><text class="ns" x="${x1 + 12}" y="${e.y + 38}">${k.startsWith('TBL') ? 'HDMI, table' : 'HDMI out'}</text>`;
+    g += `<path class="wire" d="M${x1 + 150} ${e.y + H / 2} H${x2}" style="${live ? `stroke:${e.col}` : ''}"/>`;
+    g += `<rect class="nb" x="${x2}" y="${e.y}" width="190" height="${H}" rx="6" style="${live ? `stroke:${e.col}` : ''}"/><text class="nt" x="${x2 + 12}" y="${e.y + 20}">${e.name}</text>`;
+    g += `<text class="ns" x="${x2 + 12}" y="${e.y + 38}">${live ? (k.startsWith('TBL') ? '1080p60 · HDCP 1.4' : '1080p60 · no HDCP') : (k === 'UC-B' ? 'standby (combined)' : 'no signal')} · ${e.ip}</text>`;
+    g += `<path class="wire" d="M${x2 + 190} ${e.y + H / 2} H${xs}"/>`;
+  });
+  g += `<rect class="sw" x="${xs}" y="14" width="${xs2 - xs}" height="306" rx="8"/><text class="nt" x="${xs + 14}" y="276">AV switch</text><text class="ns" x="${xs + 14}" y="292">IGMP snooping</text><text class="ns" x="${xs + 14}" y="306">1 Gb · VLAN 20</text>`;
+  DEC.forEach(d => {
+    const src = decSrc(d.id), e = src ? ENC[src] : null;
+    g += `<path class="wire" d="M${xs2} ${d.y + H / 2} H${x3}"/>`;
+    if (e) g += `<path class="flow" stroke="${e.col}" d="M${x2 + 190} ${e.y + H / 2} H${xs + 10} C ${xs + 70} ${e.y + H / 2}, ${xs + 50} ${d.y + H / 2}, ${xs2 - 10} ${d.y + H / 2} H${x3}"/>`;
+    g += `<rect class="nb" x="${x3}" y="${d.y}" width="180" height="${H}" rx="6" style="${e ? `stroke:${e.col}` : ''}"/><text class="nt" x="${x3 + 12}" y="${d.y + 20}">${d.name}</text>`;
+    g += `<text class="ns" x="${x3 + 12}" y="${d.y + 38}">${e ? '← ' + e.ip : (d.id.startsWith('ING') && isCombined() && d.id.endsWith('B') ? 'standby' : 'not subscribed')}</text>`;
+    g += `<path class="wire" d="M${x3 + 180} ${d.y + H / 2} H${x4}" style="${e ? `stroke:${e.col}` : ''}"/>`;
+    const on = d.id.length === 1 ? R(d.id).power : !!e;
+    g += `<rect class="nb" x="${x4}" y="${d.y}" width="160" height="${H}" rx="6"/><text class="nt" x="${x4 + 12}" y="${d.y + 21}">${d.sink}</text><text class="ns" x="${x4 + 12}" y="${d.y + 38}">${d.id.length === 1 ? (on ? (e ? '1080p60 · HDCP OK' : 'on') : 'off') : (e ? 'sharing to meeting' : 'idle')}</text>`;
+  });
+  $('vr').innerHTML = g;
+}
+
+/* ================= Q-SYS audio ================= */
+const AU = { lvl: { A: [-70, -70, -70, -70], B: [-70, -70, -70, -70] }, far: -99, talk: { A: -1, B: -1 }, erle: { A: 0, B: 0 } };
+function buildAudio() {
+  const room = r => `<div class="aroom" id="aroom-${r}">
+      <h3><span style="color:${r === 'A' ? 'var(--room-a)' : 'var(--room-b)'}">Room ${r}</span><span class="chip" id="achip-${r}"><i></i>—</span></h3>
+      <div class="achain">
+        <div class="ablk"><b>Ceiling mic lobes</b><div class="meters">${[0, 1, 2, 3].map(i => `<div class="mtr" id="lobe-${r}${i}"><i></i></div>`).join('')}</div><span>gated, 4 lobes</span></div>
+        <div class="ablk"><b>AEC ${r}</b><span>reference: far end</span><span class="val" id="erle-${r}">ERLE —</span><span class="val" id="aecref-${r}">ref —</span></div>
+        <div class="ablk"><b>USB bridge ${r}</b><div class="meters"><div class="mtr" id="usbtx-${r}"><i></i></div><div class="mtr" id="usbrx-${r}"><i></i></div></div><span id="usbtxt-${r}">to/from UC engine ${r}</span></div>
+        <div class="ablk"><b>Speaker zone ${r}</b><div class="meters"><div class="mtr" id="spk-${r}"><i></i></div><div class="mtr" id="spk2-${r}"><i></i></div></div><span class="val" id="gain-${r}">—</span></div>
+      </div></div>`;
+  $('au').innerHTML = room('A') + `<div class="comb-col" id="combcol"><b>ROOM COMBINER</b><div class="link"></div><span id="combtxt">Wall 1 closed</span></div>` + room('B');
+}
+const pct = db => Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+function setM(id, db, cls) { const el = $(id); if (!el) return; el.querySelector('i').style.height = pct(db) + '%'; el.className = 'mtr' + (cls ? ' ' + cls : ''); }
+function speech(prev, on) { if (!on) return Math.max(-64 + Math.random() * 4, prev - 7); const t = Math.random() < .3 ? -34 + Math.random() * 6 : -24 + Math.random() * 12; return prev + (t - prev) * .6; }
+function tickAudio() {
+  const comb = isCombined();
+  const anyCall = ROOMS.some(r => R(r).call);
+  AU.far = anyCall ? speech(AU.far < -90 ? -60 : AU.far, Math.random() < .55) : -99;
+  if (Math.random() < .06) ROOMS.forEach(r => AU.talk[r] = Math.random() < .8 ? Math.floor(Math.random() * 4) : -1);
+  ROOMS.forEach(r => {
+    const rr = R(r), people = S.r[r].occ && rr.power;
+    const farHere = rr.call ? AU.far : -99;
+    AU.lvl[r] = AU.lvl[r].map((l, i) => speech(l, people && AU.talk[r] === i && (AU.far < -36 || !rr.call)));
+    const top = Math.max(...AU.lvl[r]);
+    AU.lvl[r].forEach((l, i) => setM(`lobe-${r}${i}`, rr.mute ? l - 40 : l, rr.mute ? 'mute' : (l > -40 && l === top ? 'gate' : '')));
+    const eng = comb ? 'A' : r;
+    const usbActive = !(comb && r === 'B');
+    const micsToEng = comb ? Math.max(...AU.lvl.A, ...AU.lvl.B) : top;
+    setM('usbtx-' + r, usbActive && rr.call && !rr.mute ? micsToEng : -99);
+    setM('usbrx-' + r, usbActive ? farHere : -99);
+    $('usbtxt-' + r).textContent = usbActive ? `to/from UC engine ${eng}` : 'idle: UC engine B standby';
+    const zone = rr.power ? Math.max(farHere, -99) + (rr.vol - 55) * .3 : -99;
+    setM('spk-' + r, zone); setM('spk2-' + r, zone - 1);
+    $('gain-' + r).textContent = rr.power ? `${Math.round(-60 + rr.vol * .6)} dB${comb ? ' (zone AB)' : ''}` : 'amp standby';
+    AU.erle[r] = farHere > -50 ? 24 + Math.random() * 8 : 0;
+    $('erle-' + r).textContent = farHere > -50 ? `ERLE ${AU.erle[r].toFixed(1)} dB` : 'ERLE — (no far end)';
+    $('aecref-' + r).textContent = farHere > -50 ? `ref ${farHere.toFixed(0)} dBFS` : 'ref silent';
+    const c = $('achip-' + r), st = STATE[roomState(r)];
+    c.style.borderColor = st.edge; c.style.color = st.text; c.innerHTML = `<i style="background:${st.edge}"></i>${rr.mute ? 'Mics muted' : st.label}`;
+  });
+  const cc = $('combcol'); cc.className = 'comb-col' + (comb ? ' on' : '');
+  $('combtxt').textContent = comb ? 'Wall 1 open: A and B mics feed UC engine A; both speaker zones play the far end' : 'Wall 1 closed: two separate rooms';
+}
+
+/* ================= tools ================= */
+$('wallBtn').addEventListener('click', moveWall);
+function tog(id, fn) { $(id).addEventListener('click', () => { const v = $(id).getAttribute('aria-pressed') !== 'true'; $(id).setAttribute('aria-pressed', v); fn(v); renderAll(); }); }
+tog('occA', v => { S.r.A.occ = v; log('SENSOR', `Occupancy Room A: ${v ? 'occupied' : 'vacant'}`); });
+tog('occB', v => { S.r.B.occ = v; log('SENSOR', `Occupancy Room B: ${v ? 'occupied' : 'vacant'}`); });
+tog('lapA', v => { S.r.A.laptop = v; log('NVX', `NVX-ENC-TBL-A: HDMI ${v ? 'signal detected 1920×1080@60' : 'no signal'}`); if (!v && S.r.A.src === 'laptop') S.r.A.src = 'idle'; });
+tog('lapB', v => { S.r.B.laptop = v; log('NVX', `NVX-ENC-TBL-B: HDMI ${v ? 'signal detected 1920×1080@60' : 'no signal'}`); if (!v && S.r.B.src === 'laptop') S.r.B.src = 'idle'; });
+
+/* ================= render loop ================= */
+function renderClock() {
+  const d = new Date();
+  $('clkT').textContent = hhmmss(d.getTime());
+  $('clkD').textContent = d.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+function renderAll() { renderPlan(); renderStatus(); ROOMS.forEach(renderTp); ROOMS.forEach(renderScreen); renderRouting(); renderClock(); }
+buildPlan(); buildAudio(); renderFilters();
+log('PROC', 'Program start: Lakeview divisible room, 4-Series processor');
+log('SENSOR', 'Wall sensor: CLOSED', 'I/O 1 contact closed');
+log('QSYS', 'Connected to Q-SYS Core (QRC port 1710)');
+log('PROC', 'Room A on (occupied), Room B off (vacant)');
+renderAll();
+let lastSec = -1;
+setInterval(() => {
+  const s = Math.floor(Date.now() / 1000);
+  if (s !== lastSec) { lastSec = s; renderClock();
+    if (ROOMS.some(r => R(r).call)) { ROOMS.forEach(renderScreen); renderStatus();
+      ROOMS.forEach(r => { const st = $('tp' + r).querySelector('.tile.call .st'); if (st && R(r).call) st.textContent = 'Running ' + mmss(Date.now() - R(r).callStart); }); }
+  }
+}, 250);
+setInterval(tickAudio, 120);
+})();
+</script>
+
+</body>
+</html>
