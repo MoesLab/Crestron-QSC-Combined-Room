@@ -223,6 +223,49 @@ svg.vr { width: 100%; min-width: 760px; display: block; }
 .log .pl { display: block; color: #7f91a3; padding-left: 9.4em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log .ent.open .pl { white-space: pre-wrap; overflow: visible; color: #b9c8d6; }
 .tag.IO { color: var(--accent); }
+.tag.CAM { color: #ffb3c7; } .tag.PROBE { color: #c4f07a; }
+/* cameras */
+.cams { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .cams { grid-template-columns: minmax(0, 1fr); } }
+.cam { display: grid; gap: 8px; min-width: 0; }
+.camv { aspect-ratio: 16 / 9; background: #05080b; border-radius: 4px; position: relative; overflow: hidden; border: 2px solid var(--line); max-width: 100%; }
+.camv.live { border-color: #ff5a5a; }
+.camv svg { width: 100%; height: 100%; display: block; }
+.camv .osd { position: absolute; left: 8px; top: 6px; font-family: var(--font-mono); font-size: 11px; color: #d7e4ef; background: rgba(0,0,0,.5); padding: 1px 6px; border-radius: 2px; }
+.camv .tally { position: absolute; right: 8px; top: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 2px; background: #3a1214; color: #ff8a80; }
+.camv .tally.off { background: rgba(0,0,0,.5); color: #8a99a8; }
+.cam .row { justify-content: space-between; }
+.segs { display: inline-flex; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+.segs button { border: 0; border-right: 1px solid var(--line); background: var(--surface-2); padding: 4px 9px; font-size: 12.5px; font-weight: 600; }
+.segs button:last-child { border-right: 0; }
+.segs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.switchnote { font-size: 12.5px; color: var(--muted); }
+.switchnote b { color: var(--fg); }
+/* health + probe */
+.row5 { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1050px) { .row5 { grid-template-columns: minmax(0, 1fr); } }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+@media (max-width: 600px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--surface-2); }
+.kpi b { display: block; font-family: var(--font-display); font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi span { font-size: 12px; color: var(--muted); }
+.kpi.bad b { color: var(--bad); } .kpi.ok b { color: var(--ok); } .kpi.warn b { color: var(--warn); }
+.hw { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+table.dev { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 620px; }
+.dev th, .dev td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.dev th { position: sticky; top: 0; background: var(--surface); font-family: var(--font-display); letter-spacing: .08em; text-transform: uppercase; font-size: 12px; color: var(--muted); font-weight: 600; }
+.dev td.m { font-family: var(--font-mono); font-size: 11.5px; color: #b8c6d3; }
+.sdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.probe-list { display: grid; gap: 6px; margin-top: 12px; }
+.pi { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: start; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface-2); }
+.pi .ic { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; background: #26313c; color: var(--muted); }
+.pi.run .ic { background: var(--accent); color: var(--accent-ink); animation: pulse 1s infinite; }
+.pi.pass .ic { background: var(--ok); color: #06210f; } .pi.warn .ic { background: var(--warn); color: #261b02; } .pi.fail .ic { background: var(--bad); color: #2a0606; }
+.pi small { display: block; color: var(--muted); font-size: 12px; }
+.pi .res { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+@keyframes pulse { 50% { opacity: .5; } }
+.probe-sum { margin-top: 10px; font-size: 13.5px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .pi.run .ic { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .vr .flow { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .plan .panel { transition-duration: .01s; } }
 </style>
@@ -286,6 +329,23 @@ svg.vr { width: 100%; min-width: 760px; display: block; }
     <div class="card-b au" id="au"></div>
   </section>
 
+  <section class="card">
+    <div class="card-h"><h2>Cameras</h2><span class="switchnote" id="camNote"></span></div>
+    <div class="card-b cams" id="cams"></div>
+  </section>
+
+  <section class="row5">
+    <div class="card">
+      <div class="card-h"><h2>Device health</h2><span class="hint">Polled every 10 s, the same data XiO Cloud would show</span></div>
+      <div class="card-b"><div class="kpis" id="kpis"></div><div class="hw"><table class="dev" id="dev"></table></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Room probe</h2><button class="btn" id="probeBtn">Run room probe</button></div>
+      <div class="card-b"><p class="hint" style="margin:0">Checks every device, video route, speaker zone, microphone and camera, then gives a pass/fail report. It plays pink noise, so it only runs while both rooms are out of a meeting.</p>
+        <div class="probe-list" id="probeList"></div><div class="probe-sum" id="probeSum"></div></div>
+    </div>
+  </section>
+
   <section class="row4">
     <div class="card">
       <div class="card-h"><h2>Test tools</h2><span class="hint">Stand in for people and hardware</span></div>
@@ -296,8 +356,10 @@ svg.vr { width: 100%; min-width: 760px; display: block; }
           <div class="row"><button class="btn" id="occA" aria-pressed="true">People in Room A</button><button class="btn" id="occB" aria-pressed="false">People in Room B</button></div></div>
         <div class="tool"><h3>Laptops (HDMI at the table)</h3>
           <div class="row"><button class="btn" id="lapA" aria-pressed="true">Laptop plugged in, Room A</button><button class="btn" id="lapB" aria-pressed="false">Laptop plugged in, Room B</button></div></div>
+        <div class="tool"><h3>Faults</h3>
+          <div class="row"><button class="btn" id="fCamB" aria-pressed="false">Unplug camera B</button><button class="btn" id="fLedA" aria-pressed="false">LED wall A stops answering</button><button class="btn" id="fDecB" aria-pressed="false">NVX-DEC-B offline</button></div></div>
         <div class="tool"><h3>Coming next</h3>
-          <p class="hint" style="margin:0">Step 3: cameras, device health, room probe. Step 4: config editor with presets and wall sensor override, QR code, bookings. Tip: click any line in the message inspector to see its full payload.</p></div>
+          <p class="hint" style="margin:0">Step 4: config editor with presets and wall sensor override, QR code, bookings. Tip: add a fault, then run the room probe.</p></div>
       </div>
     </div>
     <div class="card">
@@ -328,6 +390,7 @@ const S = {
     B: { power: false, src: 'idle', call: false, vol: 50, mute: false, occ: false, laptop: false, callStart: 0 }
   },
   ui: { A: { dlg: null }, B: { dlg: null } },
+  fault: { camB: false, ledA: false, decB: false },
   prompted: false
 };
 const COLOR = { A: 'var(--room-a)', B: 'var(--room-b)' };
@@ -342,19 +405,20 @@ const hhmmss = t => { const d = new Date(t); return [d.getHours(), d.getMinutes(
 /* channel → label, direction from the processor's point of view */
 const CH = {
   'TP-A': ['Touch panels', 'in'], 'TP-B': ['Touch panels', 'in'], SENSOR: ['I/O + sensors', 'in'], IO: ['I/O + sensors', 'in'],
-  NVX: ['DM NVX', 'out'], QSYS: ['Q-SYS', 'out'], DISPLAY: ['Displays', 'out'], UC: ['UC engines', 'out'], PROC: ['Program', ''], WARN: ['Program', '']
+  NVX: ['DM NVX', 'out'], QSYS: ['Q-SYS', 'out'], DISPLAY: ['Displays', 'out'], UC: ['UC engines', 'out'], CAM: ['Cameras', 'out'], PROBE: ['Program', ''], PROC: ['Program', ''], WARN: ['Program', '']
 };
-const GROUPS = ['Touch panels', 'I/O + sensors', 'DM NVX', 'Q-SYS', 'Displays', 'UC engines', 'Program'];
+const GROUPS = ['Touch panels', 'I/O + sensors', 'DM NVX', 'Q-SYS', 'Displays', 'UC engines', 'Cameras', 'Program'];
 const INS = { list: [], on: Object.fromEntries(GROUPS.map(g => [g, true])), paused: false, count: Object.fromEntries(GROUPS.map(g => [g, 0])) };
 const RESP = { NVX: '← 200 OK', QSYS: '← {"jsonrpc":"2.0","id":%ID%,"result":true}', DISPLAY: '← ack' };
 let rpcId = 100;
 function log(tag, msg, tx, dirOverride) {
   const [grp, dir0] = CH[tag] || ['Program', ''];
-  const dir = dirOverride || dir0;
+  const noReply = dirOverride === 'out-noreply';
+  const dir = noReply ? 'out' : (dirOverride || dir0);
   let payload = tx || '';
   if (tag === 'QSYS' && payload.startsWith('{"jsonrpc"')) payload = payload.replace('"method"', `"id":${++rpcId},"method"`);
   addEntry({ t: Date.now(), tag, grp, dir, msg, payload });
-  if (RESP[tag] && tx && dir === 'out') {
+  if (RESP[tag] && tx && dir === 'out' && !noReply) {
     const r = tag === 'DISPLAY' ? (tx.includes('ON') ? '← "PWR=ON\\r"' : '← "PWR=OFF\\r"') : RESP[tag].replace('%ID%', rpcId);
     setTimeout(() => addEntry({ t: Date.now(), tag, grp, dir: 'in', msg: 'reply ' + r.replace(/^← /, ''), payload: '' }), 60 + Math.random() * 120);
   }
@@ -394,6 +458,11 @@ $('insClear').addEventListener('click', () => { INS.list = []; GROUPS.forEach(g 
 
 /* ================= device commands (what the processor sends) ================= */
 function displayPower(room, on) {
+  if (room === 'A' && S.fault.ledA) {
+    log('DISPLAY', `LED wall A power ${on ? 'on' : 'off'}`, `RS-232 → "PWR ${on ? 'ON' : 'OFF'}\\r"`, 'out-noreply');
+    setTimeout(() => log('WARN', 'LED wall A: no reply after 2 s, retrying once, then flagging in device health'), 2000);
+    return;
+  }
   log('DISPLAY', `LED wall ${room} power ${on ? 'on' : 'off'}`, `RS-232 → "PWR ${on ? 'ON' : 'OFF'}\\r"`);
 }
 function routeDisplay(room) {
@@ -699,6 +768,7 @@ function renderScreen(room) {
   const comb = isCombined();
   let html, label, cls;
   if (!rr.power) { html = '<div class="scr off">NO SIGNAL</div>'; label = 'Off'; cls = ''; }
+  else if (room === 'B' && S.fault.decB) { html = '<div class="scr off" style="color:#555">NO SIGNAL · NVX-DEC-B offline</div>'; label = 'No signal'; cls = 'bad'; }
   else if (rr.call) {
     const sharing = rr.src === 'laptop';
     const tiles = PEOPLE.slice(0, sharing ? 3 : 5).map(([n, c], i) => `<div class="tilev${i === 0 ? ' spk' : ''}"><span class="av" style="background:${c}">${n.split(' ').map(w => w[0]).join('')}</span><span class="nm">${n}</span></div>`).join('');
@@ -820,11 +890,174 @@ function tickAudio() {
   $('combtxt').textContent = comb ? 'Wall 1 open: A and B mics feed UC engine A; both speaker zones play the far end' : 'Wall 1 closed: two separate rooms';
 }
 
+/* ================= cameras ================= */
+const CAM = { A: { mode: 'group' }, B: { mode: 'group' }, active: 'A', cand: 'A', since: 0 };
+const SEATS = [[96, 118], [128, 112], [160, 110], [192, 112], [224, 118], [112, 140], [160, 138], [208, 140]];
+function camFeedsTo(r) {
+  if (isCombined()) return CAM.active === r && S.r.A.call ? 'UC engine A' : null;
+  return S.r[r].call ? 'UC engine ' + r : null;
+}
+function camScene(r) {
+  const col = r === 'A' ? '#5aa7ff' : '#b391ff';
+  let g = '<rect width="320" height="180" fill="#2a3440"/><rect y="88" width="320" height="92" fill="#3a3330"/>';
+  g += '<rect x="0" y="40" width="320" height="50" fill="#33404d"/><rect x="40" y="52" width="70" height="30" fill="#24303b"/><rect x="210" y="52" width="70" height="30" fill="#24303b"/>';
+  g += '<path d="M110 168 L134 104 H186 L210 168 Z" fill="#4b3d33"/>';
+  const occ = S.r[r].occ;
+  const talker = AU.talk[r];
+  if (occ) SEATS.forEach(([x, y], i) => {
+    if (i % 3 === 2 && r === 'B') return;
+    const sz = 7 + (y - 100) * .18;
+    g += `<circle cx="${x}" cy="${y - sz * 1.6}" r="${sz * .7}" fill="#d9b99b"/><rect x="${x - sz}" y="${y - sz}" width="${sz * 2}" height="${sz * 2}" rx="${sz * .5}" fill="${i % 2 ? '#41556b' : '#5d4a6e'}"/>`;
+  });
+  // framing box
+  const mode = CAM[r].mode;
+  if (occ && mode !== 'privacy') {
+    let bx;
+    if (mode === 'group') bx = [80, 88, 160, 66];
+    else if (mode === 'speaker' && talker >= 0) { const [x, y] = SEATS[Math.min(7, talker * 2)]; bx = [x - 26, y - 34, 52, 44]; }
+    else if (mode === 'preset') bx = [20, 40, 280, 130];
+    if (bx) g += `<rect x="${bx[0]}" y="${bx[1]}" width="${bx[2]}" height="${bx[3]}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="6 4"/>`;
+  }
+  return g;
+}
+function renderCams() {
+  const off = r => (r === 'B' && S.fault.camB);
+  $('cams').innerHTML = ROOMS.map(r => {
+    const feed = camFeedsTo(r), m = CAM[r].mode;
+    let view;
+    if (off(r)) view = '<div style="position:absolute;inset:0;display:grid;place-items:center;color:#ff8a80;font-family:var(--font-mono);font-size:13px">NO VIDEO · camera B not responding</div>';
+    else if (m === 'privacy') view = '<div style="position:absolute;inset:0;display:grid;place-items:center;color:#8a99a8;font-family:var(--font-mono);font-size:13px">PRIVACY · lens covered</div>';
+    else view = `<svg viewBox="0 0 320 180" aria-label="View from camera ${r}">${camScene(r)}</svg>`;
+    return `<div class="cam"><div class="camv${feed && !off(r) ? ' live' : ''}">${view}<span class="osd">Camera ${r} · ${({ group: 'Group framing', speaker: 'Speaker tracking', preset: 'Preset 1 · wide', privacy: 'Privacy' })[m]}</span><span class="tally${feed && !off(r) ? '' : ' off'}">${feed && !off(r) ? '● LIVE → ' + feed : 'not in use'}</span></div>
+      <div class="row"><div class="segs" data-cam="${r}">${[['group', 'Group'], ['speaker', 'Speaker'], ['preset', 'Preset'], ['privacy', 'Privacy']].map(([k, l]) => `<button data-m="${k}" aria-pressed="${m === k}">${l}</button>`).join('')}</div>
+      <span class="hint">USB to UC engine ${r}${r === 'B' ? ' · via NVX to A when combined' : ''}</span></div></div>`;
+  }).join('');
+  $('camNote').innerHTML = isCombined()
+    ? `Combined: <b>voice switching</b> sends the camera of the room with the active talker to UC engine A. Now: <b>camera ${CAM.active}</b>`
+    : 'Divided: each camera feeds its own UC engine during a meeting';
+}
+$('cams').addEventListener('click', e => {
+  const b = e.target.closest('button[data-m]'); if (!b) return;
+  const r = b.closest('[data-cam]').dataset.cam, m = b.dataset.m;
+  CAM[r].mode = m;
+  log('CAM', `Camera ${r}: ${({ group: 'group framing', speaker: 'speaker tracking', preset: 'recall preset 1', privacy: 'privacy on' })[m]}`, `HTTP POST /api/camera/${m === 'preset' ? 'preset/recall {"id":1}' : 'mode {"mode":"' + m + '"}'}`, 'out');
+  renderCams();
+});
+function tickCams() {
+  if (isCombined() && S.r.A.call) {
+    const la = Math.max(...AU.lvl.A), lb = S.fault.camB ? -99 : Math.max(...AU.lvl.B);
+    const want = lb > la + 3 && lb > -40 ? 'B' : la > lb + 3 && la > -40 ? 'A' : CAM.active;
+    if (want !== CAM.cand) { CAM.cand = want; CAM.since = Date.now(); }
+    if (CAM.cand !== CAM.active && Date.now() - CAM.since > 2500) {
+      CAM.active = CAM.cand;
+      log('CAM', `Voice switching: talker in Room ${CAM.active}, camera ${CAM.active} → UC engine A`, `Q-SYS mic levels A ${la.toFixed(0)} / B ${lb.toFixed(0)} dBFS, 2.5 s hold`, '');
+    }
+  } else CAM.active = 'A';
+  renderCams();
+}
+
+/* ================= device health ================= */
+const DEVS = [
+  ['Processor', 'CP4N', '10.20.0.10', '2.8001.00098', () => 'ok'],
+  ['Touch panel A', 'TS-1070', '10.20.0.31', '2.8000.00120', () => 'ok'],
+  ['Touch panel B', 'TS-1070', '10.20.0.32', '2.8000.00120', () => 'ok'],
+  ['UC engine A', 'UC-ENGINE (Teams Rooms)', '10.20.0.41', 'MTR 5.4.x', () => S.r.A.call ? 'busy' : 'ok'],
+  ['UC engine B', 'UC-ENGINE (Teams Rooms)', '10.20.0.42', 'MTR 5.4.x', () => isCombined() ? 'standby' : S.r.B.call ? 'busy' : 'ok'],
+  ['Q-SYS Core', 'Core 110f', '10.20.0.50', '9.12.0', () => 'ok'],
+  ['Ceiling mic A', 'TeamConnect Ceiling', '10.20.0.61', '1.9.x', () => 'ok'],
+  ['Ceiling mic B', 'TeamConnect Ceiling', '10.20.0.62', '1.9.x', () => 'ok'],
+  ['Camera A', 'Intelligent camera', '10.20.0.71', '3.2.x', () => 'ok'],
+  ['Camera B', 'Intelligent camera', '10.20.0.72', '3.2.x', () => S.fault.camB ? 'offline' : 'ok'],
+  ['NVX-ENC-TBL-A', 'DM-NVX-E30', '10.20.1.21', '7.1.x', () => S.r.A.laptop ? 'ok' : 'nosig'],
+  ['NVX-ENC-TBL-B', 'DM-NVX-E30', '10.20.1.22', '7.1.x', () => S.r.B.laptop ? 'ok' : 'nosig'],
+  ['NVX-ENC-UC-A', 'DM-NVX-E30', '10.20.1.11', '7.1.x', () => 'ok'],
+  ['NVX-ENC-UC-B', 'DM-NVX-E30', '10.20.1.12', '7.1.x', () => isCombined() ? 'standby' : 'ok'],
+  ['NVX-DEC-A', 'DM-NVX-D30', '10.20.1.31', '7.1.x', () => 'ok'],
+  ['NVX-DEC-B', 'DM-NVX-D30', '10.20.1.32', '7.1.x', () => S.fault.decB ? 'offline' : 'ok'],
+  ['NVX-DEC-ING-A', 'DM-NVX-D30', '10.20.1.33', '7.1.x', () => 'ok'],
+  ['NVX-DEC-ING-B', 'DM-NVX-D30', '10.20.1.34', '7.1.x', () => 'ok'],
+  ['LED wall A', 'LED controller, RS-232 COM 1', 'COM 1', '—', () => S.fault.ledA ? 'noreply' : 'ok'],
+  ['LED wall B', 'LED controller, RS-232 COM 2', 'COM 2', '—', () => 'ok'],
+  ['Airwall sensor', 'Contact closure, I/O 1', 'I/O 1', '—', () => S.sensor === 'moving' ? 'busy' : 'ok']
+];
+const ST = { ok: ['#4fd18b', 'Online'], busy: ['#3cc7d4', 'Online · in use'], standby: ['#8a99a8', 'Standby'], nosig: ['#f1c24c', 'Online · no input'], noreply: ['#f1c24c', 'No reply'], offline: ['#ff6f6b', 'Offline'] };
+const boot = Date.now() - 1000 * 60 * 60 * 26 * 3;
+function renderHealth() {
+  const rows = DEVS.map(([n, model, ip, fw, f], i) => {
+    const st = f(), [c, l] = ST[st];
+    const up = st === 'offline' ? '—' : (() => { const s = Math.floor((Date.now() - boot) / 1000) - i * 3700; return `${Math.floor(s / 86400)}d ${Math.floor(s / 3600) % 24}h`; })();
+    const temp = /NVX|Processor|Core|UC/.test(n) && st !== 'offline' ? `${38 + (i * 7) % 11 + (st === 'busy' ? 4 : 0)} °C` : '—';
+    return { n, model, ip, fw, st, c, l, up, temp };
+  });
+  const online = rows.filter(r => r.st !== 'offline').length, alerts = rows.filter(r => ['offline', 'noreply'].includes(r.st)).length, warn = rows.filter(r => r.st === 'nosig').length;
+  $('kpis').innerHTML = `<div class="kpi ${online === rows.length ? 'ok' : 'bad'}"><b>${online}/${rows.length}</b><span>devices online</span></div>
+    <div class="kpi ${alerts ? 'bad' : 'ok'}"><b>${alerts}</b><span>alerts</span></div>
+    <div class="kpi ${warn ? 'warn' : ''}"><b>${warn}</b><span>inputs without signal</span></div>
+    <div class="kpi"><b>${Math.floor((Date.now() - boot) / 86400000)}d</b><span>processor uptime</span></div>`;
+  $('dev').innerHTML = '<tr><th>Device</th><th>Model</th><th>Address</th><th>Firmware</th><th>Status</th><th>Uptime</th><th>Temp</th></tr>' +
+    rows.sort((a, b) => (['offline', 'noreply'].includes(b.st) ? 1 : 0) - (['offline', 'noreply'].includes(a.st) ? 1 : 0))
+      .map(r => `<tr><td><b>${esc(r.n)}</b></td><td>${esc(r.model)}</td><td class="m">${r.ip}</td><td class="m">${r.fw}</td><td><span class="sdot" style="background:${r.c}"></span>${r.l}</td><td class="m">${r.up}</td><td class="m">${r.temp}</td></tr>`).join('');
+}
+
+/* ================= room probe ================= */
+const PROBE = [
+  ['Ping every device', 'ICMP to all 21 devices', () => { const bad = DEVS.filter(d => d[4]() === 'offline').map(d => d[0]); return bad.length ? ['fail', `${bad.join(', ')} not answering`] : ['pass', '21/21 replied, avg 0.6 ms']; }],
+  ['Q-SYS control link', 'QRC status on port 1710', () => ['pass', 'Core status OK, design running']],
+  ['Touch panels', 'Both panels registered on the processor', () => ['pass', 'IP-ID 03 and 04 online']],
+  ['Displays answer', 'Power query to both LED walls', () => S.fault.ledA ? ['fail', 'LED wall A: no reply on COM 1'] : ['pass', 'Both replied "PWR?" within 120 ms']],
+  ['Video routes', 'Test pattern on each decoder, read back sync', () => S.fault.decB ? ['fail', 'NVX-DEC-B offline: LED wall B has no video path'] : ['pass', '4/4 decoders locked 1080p60, HDCP OK']],
+  ['Laptop inputs', 'Signal on table encoders', () => (S.r.A.laptop && S.r.B.laptop) ? ['pass', 'Both tables have signal'] : ['warn', `No laptop on table ${[!S.r.A.laptop && 'A', !S.r.B.laptop && 'B'].filter(Boolean).join(' and ')} (fine when nobody is presenting)`]],
+  ['Speaker zones', 'Pink noise −20 dBFS, one zone at a time', () => ['pass', 'Zone A −20.1, zone B −19.8 dBFS out']],
+  ['Microphones', 'Read back pink noise on every mic lobe', () => ['pass', 'All 8 lobes −38 to −34 dBFS (expected −40 or higher)']],
+  ['Echo canceller', 'AEC reference present during noise', () => ['pass', 'ERLE 27 dB room A, 29 dB room B']],
+  ['Cameras', 'Recall preset 1 on each camera', () => S.fault.camB ? ['fail', 'Camera B did not respond'] : ['pass', 'Both cameras moved to preset 1']],
+  ['Airwall sensor', 'Sensor agrees with room mode', () => (isCombined() && S.sensor !== 'open') ? ['fail', 'Combined but sensor not open'] : ['pass', `Sensor ${S.sensor}, mode ${S.mode}`]]
+];
+let probing = false;
+function runProbe() {
+  if (probing) return;
+  if (ROOMS.some(r => S.r[r].call)) {
+    $('probeSum').textContent = 'Probe not started: a meeting is running. The test plays pink noise in the speakers.';
+    log('PROBE', 'Probe refused: meeting in progress'); return;
+  }
+  probing = true; $('probeBtn').disabled = true;
+  const list = $('probeList');
+  list.innerHTML = PROBE.map(([t, d], i) => `<div class="pi" id="pi${i}"><span class="ic">${i + 1}</span><span>${t}<small>${d}</small></span><span class="res" id="pr${i}">waiting</span></div>`).join('');
+  $('probeSum').textContent = '';
+  log('PROBE', 'Room probe started from the dashboard');
+  const res = { pass: 0, warn: 0, fail: 0 }, t0 = Date.now();
+  let i = 0;
+  const step = () => {
+    if (i > 0) {
+      const [st, msg] = PROBE[i - 1][2]();
+      res[st]++;
+      $('pi' + (i - 1)).className = 'pi ' + st;
+      $('pi' + (i - 1)).querySelector('.ic').textContent = st === 'pass' ? '✓' : st === 'warn' ? '!' : '✕';
+      $('pr' + (i - 1)).textContent = msg;
+      log(st === 'fail' ? 'WARN' : 'PROBE', `${PROBE[i - 1][0]}: ${st.toUpperCase()}`, msg, '');
+    }
+    if (i === 6) log('QSYS', 'Pink noise on, zone A', '{"jsonrpc":"2.0","method":"Control.Set","params":{"Name":"Probe-Noise-A","Value":1}}');
+    if (i === 8) log('QSYS', 'Pink noise off', '{"jsonrpc":"2.0","method":"Control.Set","params":{"Name":"Probe-Noise","Value":0}}');
+    if (i < PROBE.length) { $('pi' + i).className = 'pi run'; $('pr' + i).textContent = 'running…'; i++; setTimeout(step, 550 + Math.random() * 450); return; }
+    const secs = ((Date.now() - t0) / 1000).toFixed(1);
+    const sum = $('probeSum');
+    sum.textContent = `Finished in ${secs} s: ${res.pass} passed, ${res.warn} warnings, ${res.fail} failed.`;
+    sum.style.color = res.fail ? 'var(--bad)' : res.warn ? 'var(--warn)' : 'var(--ok)';
+    log(res.fail ? 'WARN' : 'PROBE', `Room probe finished: ${res.pass} pass, ${res.warn} warn, ${res.fail} fail`);
+    probing = false; $('probeBtn').disabled = false;
+  };
+  step();
+}
+$('probeBtn').addEventListener('click', runProbe);
+
 /* ================= tools ================= */
 $('wallBtn').addEventListener('click', moveWall);
 function tog(id, fn) { $(id).addEventListener('click', () => { const v = $(id).getAttribute('aria-pressed') !== 'true'; $(id).setAttribute('aria-pressed', v); fn(v); renderAll(); }); }
 tog('occA', v => { S.r.A.occ = v; log('SENSOR', `Occupancy Room A: ${v ? 'occupied' : 'vacant'}`); });
 tog('occB', v => { S.r.B.occ = v; log('SENSOR', `Occupancy Room B: ${v ? 'occupied' : 'vacant'}`); });
+tog('fCamB', v => { S.fault.camB = v; log(v ? 'WARN' : 'CAM', v ? 'Camera B stopped responding (no USB video, HTTP timeout)' : 'Camera B back online'); });
+tog('fLedA', v => { S.fault.ledA = v; log(v ? 'WARN' : 'DISPLAY', v ? 'LED wall A: RS-232 no longer answering' : 'LED wall A answering again'); });
+tog('fDecB', v => { S.fault.decB = v; log(v ? 'WARN' : 'NVX', v ? 'NVX-DEC-B lost from the network' : 'NVX-DEC-B back online'); });
 tog('lapA', v => { S.r.A.laptop = v; log('NVX', `NVX-ENC-TBL-A: HDMI ${v ? 'signal detected 1920×1080@60' : 'no signal'}`); if (!v && S.r.A.src === 'laptop') S.r.A.src = 'idle'; });
 tog('lapB', v => { S.r.B.laptop = v; log('NVX', `NVX-ENC-TBL-B: HDMI ${v ? 'signal detected 1920×1080@60' : 'no signal'}`); if (!v && S.r.B.src === 'laptop') S.r.B.src = 'idle'; });
 
@@ -834,7 +1067,7 @@ function renderClock() {
   $('clkT').textContent = hhmmss(d.getTime());
   $('clkD').textContent = d.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
-function renderAll() { renderPlan(); renderStatus(); ROOMS.forEach(renderTp); ROOMS.forEach(renderScreen); renderRouting(); renderClock(); }
+function renderAll() { renderPlan(); renderStatus(); ROOMS.forEach(renderTp); ROOMS.forEach(renderScreen); renderRouting(); renderCams(); renderHealth(); renderClock(); }
 buildPlan(); buildAudio(); renderFilters();
 log('PROC', 'Program start: Lakeview divisible room, 4-Series processor');
 log('SENSOR', 'Wall sensor: CLOSED', 'I/O 1 contact closed');
@@ -850,6 +1083,8 @@ setInterval(() => {
   }
 }, 250);
 setInterval(tickAudio, 120);
+setInterval(tickCams, 500);
+setInterval(renderHealth, 10000);
 })();
 </script>
 

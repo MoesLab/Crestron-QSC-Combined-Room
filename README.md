@@ -13,10 +13,13 @@ Lakeview Room A and Room B: two Microsoft Teams rooms split by an airwall, run b
 - **Video routing (DM NVX)** — encoders, multicast addresses, switch, decoders, LED walls and UC engine content inputs, with live subscriptions.
 - **Audio (Q-SYS)** — ceiling mic lobes, AEC, USB bridges to the UC engines, speaker zones and the Room Combiner.
 - **Message inspector** — every touch panel join, NVX REST call, Q-SYS JSON-RPC message, display command and reply, filterable, with full payloads.
+- **Cameras** — group framing, speaker tracking, presets and privacy; in combined mode, voice switching picks the camera of the room with the active talker.
+- **Device health** — 21 devices with status, address, firmware, uptime and temperature, plus alert counts.
+- **Room probe** — one button checks pings, Q-SYS link, panels, displays, video routes, speaker zones with pink noise, microphones, echo canceller, cameras and the airwall sensor, then reports pass, warning or fail. Use the fault buttons to see it catch problems.
 
 ## Planned
 
-Cameras, device health and a one-button room probe; a config editor with presets and wall sensor override; QR code and room bookings.
+A config editor with presets and wall sensor override; QR code and room bookings.
 
 ## System
 
